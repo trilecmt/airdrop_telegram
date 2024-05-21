@@ -52,8 +52,11 @@ def exec():
                         time.sleep(15)
             except Exception as e:
                 pass
-            # input("Press Enter to continue")          
-            driver_helper.delete_cache(driver)
+            # input("Press Enter to continue")   
+            try:       
+                driver_helper.delete_cache(driver)
+            except Exception as e:
+                pass
 
     except Exception as e:
         print(e)
