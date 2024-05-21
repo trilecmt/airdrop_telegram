@@ -1,4 +1,4 @@
-CHORME_DRIVER_PATH = "D:\\Safe\\GPMLogin\\gpm_browser\\gpm_browser_chromium_core_124\\gpmdriver.exe"
+CHORME_DRIVER_PATH = "chromedriver.exe"
 DEFAULT_WINDOW_SIZE=(400,800) #WIDTH_HEIGHT
 MEMEFI_PROFILE='MEMEFI'
 OCEAN_PROFILE='OCEAN'

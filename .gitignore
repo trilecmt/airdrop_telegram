@@ -23,7 +23,7 @@ var/
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
-
+account.xlsx
 # Unit test / coverage reports
 .tox/
 .coverage
