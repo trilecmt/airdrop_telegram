@@ -36,7 +36,7 @@ def exec():
         driver=driver_login.get_driver(debugger_address=response['data']['debugger_address'],window_size=DEFAULT_WINDOW_SIZE)
        
         def click_hero(time_click):
-            print(f'[{row['profile']}] Attacking hero')
+            print(f"[{row['profile']}] Attacking hero")
             xpath_animation="//div[@class='animation ']"
             element=driver_helper.wait_element_appear(driver,timeout=60, value=xpath_animation)
             if element is None:
@@ -90,19 +90,29 @@ def exec():
                             return True
                 except:
                     pass
-                tap_bot_elements=driver_helper.wait_elements_appear(driver,timeout=20,value="//span[contains(text(), 'TAP BOT')] | //span[contains(text(), 'ACTIVATE TAP BOT')]")
+                tap_bot_elements = driver_helper.wait_elements_appear(driver,timeout=20,value="//span[@class='MuiTypography-root MuiTypography-bodyBigExtraBold css-1kcqyrd']")
+                # tap_bot_elements=driver_helper.wait_elements_appear(driver,timeout=20,value="//span[contains(text(), 'TAP BOT')] | //span[contains(text(), 'ACTIVATE TAP BOT')]")
                 if tap_bot_elements is not None:
-                    tap_bot_elements[0].click()
-                    elements=driver_helper.wait_elements_appear(driver,timeout=20,min_count=5,value="//button[@class='MuiButtonBase-root MuiButton-root MuiButton-primary MuiButton-primaryPrimary MuiButton-sizeLarge MuiButton-primarySizeLarge MuiButton-colorPrimary MuiButton-root MuiButton-primary MuiButton-primaryPrimary MuiButton-sizeLarge MuiButton-primarySizeLarge MuiButton-colorPrimary css-1ew4p28']")
-                    if elements  is not None:
-                        for btn in elements:
-                            if btn.text!='':
-                                time.sleep(3) 
-                                action = webdriver.common.action_chains.ActionChains(driver)
-                                action.w3c_actions.pointer_action._duration = helper.get_random(1,3)
-                                action.move_to_element_with_offset(btn,helper.get_random(-15,0),helper.get_random(-15,0))# helper.get_random(-20,-40), helper.get_random(-20,-40))
-                                action.double_click()
-                                action.perform()
+                    #check if the element is TAP BOT: then buy the tapbot if enough money
+                    if tap_bot_elements[2].text == "TAP BOT":
+                        price_upgrade_elements = driver_helper.wait_elements_appear(driver,timeout=20,value="//span[@class='MuiTypography-root MuiTypography-bodyLittleBold css-1r6tses']")
+                        upgrade_tap_bot = int(price_upgrade_elements[0].text.replace(",", ""))
+                        current_coin = driver_helper.wait_elements_appear(driver,timeout=20,value="//span[@class='MuiTypography-root MuiTypography-bodyBigExtraBold css-1j8g0c1']")
+                        current_coin = int(current_coin[0].text.replace(",", ""))
+                        if current_coin>=upgrade_tap_bot:
+                            tap_bot_elements[2].click()
+                    else:
+                        tap_bot_elements[2].click()
+                        elements=driver_helper.wait_elements_appear(driver,timeout=20,min_count=5,value="//button[@class='MuiButtonBase-root MuiButton-root MuiButton-primary MuiButton-primaryPrimary MuiButton-sizeLarge MuiButton-primarySizeLarge MuiButton-colorPrimary MuiButton-root MuiButton-primary MuiButton-primaryPrimary MuiButton-sizeLarge MuiButton-primarySizeLarge MuiButton-colorPrimary css-1ew4p28']")
+                        if elements  is not None:
+                            for btn in elements:
+                                if btn.text!='':
+                                    time.sleep(3) 
+                                    action = webdriver.common.action_chains.ActionChains(driver)
+                                    action.w3c_actions.pointer_action._duration = helper.get_random(1,3)
+                                    action.move_to_element_with_offset(btn,helper.get_random(-15,0),helper.get_random(-15,0))# helper.get_random(-20,-40), helper.get_random(-20,-40))
+                                    action.double_click()
+                                    action.perform()
 
                     time.sleep(3) 
             time.sleep(3)   
