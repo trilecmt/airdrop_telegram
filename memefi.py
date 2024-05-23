@@ -76,6 +76,7 @@ def exec():
         def booster():
             xpath_booster="//p[text()='Boosters']"
             driver_helper.click_element(driver,value=xpath_booster)
+            driver_helper.wait_element_appear(driver,value="//p[text()='Free Boosts']",timeout=5)
             elements=driver_helper.wait_elements_appear(driver,timeout=20,value="//span[@class='MuiTypography-root MuiTypography-bodyLittleBold css-18kcc4d']")
             if elements is None:
                 return
@@ -131,6 +132,7 @@ def exec():
             print(e)
         finally:
             print('Done...')
+            driver.close()
             
 if __name__=='__main__':
     while True:
