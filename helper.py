@@ -2,6 +2,7 @@
 import random
 import requests
 import login_drivers.gen_login_driver
+import time
 
 def get_driver_login(driver_name:str):
     if driver_name=="GEN_LOGIN":
@@ -21,3 +22,6 @@ def request_api(api_url):
 
 def get_random(min,max):
     return random.randint(min, max)
+
+def sleep(min,max):
+    time.sleep(get_random(min,max))

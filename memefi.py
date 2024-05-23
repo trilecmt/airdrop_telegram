@@ -7,6 +7,11 @@ import constraint
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+import time
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 DEFAULT_WINDOW_SIZE=(400,800)
 PROFILE_NAME=constraint.MEMEFI_PROFILE
@@ -64,7 +69,7 @@ def exec():
                         
                     except Exception as e:
                         pass
-                time.sleep(helper.get_random(2,3))
+                time.sleep(helper.get_random(1,2))
                 #check level up
 
                 element_countines=driver_helper.find_elements(driver,value="//p[text()='Continue Playing']")
@@ -75,37 +80,80 @@ def exec():
 
         def booster():
             xpath_booster="//p[text()='Boosters']"
+            print('click Boosters')
             driver_helper.click_element(driver,value=xpath_booster)
-            elements=driver_helper.wait_elements_appear(driver,timeout=20,value="//span[@class='MuiTypography-root MuiTypography-bodyLittleBold css-18kcc4d']")
-            if elements is None:
-                return
-            if elements is not None:
-                try:
-                    if elements[1].text!='0 / 3 Boosts':
-                        elements[1].click()      
-                        recharge_elements=driver_helper.wait_elements_appear(driver,timeout=10,min_count=2,value="//p[contains(@class, 'MuiTypography-root') and contains(@class, 'MuiTypography-body1') and contains(@class, 'css-ibzb0o') and text()='claim boost']")
-                        if recharge_elements is not  None: 
-                            time.sleep(2)
-                            recharge_elements[1].click()
-                            return True
-                except:
-                    pass
-                tap_bot_elements=driver_helper.wait_elements_appear(driver,timeout=20,value="//span[contains(text(), 'TAP BOT')] | //span[contains(text(), 'ACTIVATE TAP BOT')]")
+            time.sleep(1)
+            driver_helper.wait_until_element_located(driver,timeout=20,value="//*[text()='Recharge']/following-sibling::span[@class='MuiTypography-root MuiTypography-bodyLittleBold css-18kcc4d' and contains(text(),'Boosts')]")
+            time.sleep(1)
+            element = WebDriverWait(driver,20).until(EC.presence_of_element_located((By.XPATH, "//*[text()='Recharge']/following-sibling::span[@class='MuiTypography-root MuiTypography-bodyLittleBold css-18kcc4d' and contains(text(),'Boosts')]")))
+            time.sleep(1)
+            if  not element.text.replace(" ","").startswith("0/"):
+                print(f'Click Recharge {element.text}')
+                element.click()
+                recharge_elements=driver_helper.wait_elements_appear(driver,timeout=10,min_count=2,value="//p[contains(@class, 'MuiTypography-root') and contains(@class, 'MuiTypography-body1') and contains(@class, 'css-ibzb0o') and text()='claim boost']")
+                if recharge_elements is not  None: 
+                    try:
+                        time.sleep(2)
+                        print('Click Recharge')
+                        recharge_elements[1].click()
+                        print("Recharge full mana.Continue click...")
+                        return True
+                    except Exception as e:
+                        print(e)
+            else:
+                print("No Recharge")
+                
+            
+            def claim_bot_offline():
+                '''Tiến hành claim bot offline'''
+                # Kiểm tra chữ Available
+                time.sleep(3)
+                tap_bot_elements=driver_helper.wait_elements_appear(driver,timeout=5,value="//span[contains(text(), 'TAP BOT')] | //span[contains(text(), 'ACTIVATE TAP BOT')]")
                 if tap_bot_elements is not None:
+                    print(f'Click Tab Bot')
                     tap_bot_elements[0].click()
-                    elements=driver_helper.wait_elements_appear(driver,timeout=20,min_count=5,value="//button[@class='MuiButtonBase-root MuiButton-root MuiButton-primary MuiButton-primaryPrimary MuiButton-sizeLarge MuiButton-primarySizeLarge MuiButton-colorPrimary MuiButton-root MuiButton-primary MuiButton-primaryPrimary MuiButton-sizeLarge MuiButton-primarySizeLarge MuiButton-colorPrimary css-1ew4p28']")
-                    if elements  is not None:
-                        for btn in elements:
-                            if btn.text!='':
-                                time.sleep(3) 
-                                action = webdriver.common.action_chains.ActionChains(driver)
-                                action.w3c_actions.pointer_action._duration = helper.get_random(1,3)
-                                action.move_to_element_with_offset(btn,helper.get_random(-15,0),helper.get_random(-15,0))# helper.get_random(-20,-40), helper.get_random(-20,-40))
-                                action.double_click()
-                                action.perform()
+                    helper.sleep(2,2)
+                    element=driver_helper.wait_element_appear(driver,timeout=3,value=f"//p[text()='Claim coins']/parent::button")
+                    if element  is not None:
+                        
+                            if driver_helper.web_element_is_clickable(element):
+                                try:
+                                    print(f'Click Claim coins')
+                                    element.click()
+                                    helper.sleep(2,2) 
+                                    print(f'Clicked Claim coins...')
+                                except Exception as e:
+                                    pass
+                            # print(e)  
+                            
+                    time.sleep(1.5)
+                    element=driver_helper.wait_element_appear(driver,timeout=3,value=f"//p[text()='Activate Bot']/parent::button")
+                    if element  is not None:
+                        if driver_helper.web_element_is_clickable(element):
+                            try:
+                                print(f'Click Activate Bot')
+                                element.click()
+                                helper.sleep(2,2) 
+                                print(f'Clicked Activate Bot...')
+                            except Exception as e:
+                                # print(e)  
+                                pass
+                            
+                    time.sleep(1.5)
+                    # for key in ['Claim coins','Activate Bot']:
+                    #     element=driver_helper.wait_elements_appear(driver,timeout=3,value=f"//p[text()='Claim coins']/parent::button")
+                    #     if element  is not None:
+                    #         try:
+                    #             print(f'Click {key}')
+                    #             element.click()
+                    #             helper.sleep(2,2) 
+                    #             print(f'Clicked {key}...')
+                    #         except Exception as e:
+                    #             print(e)  
+                                
+                    #     time.sleep(1.5)
 
-                    time.sleep(3) 
-            time.sleep(3)   
+            claim_bot_offline()
 
         try:
             driver.get(url)
@@ -120,6 +168,11 @@ def exec():
         except Exception as e:
             print(e)
         finally:
+            try:       
+                driver_helper.delete_cache(driver)
+            except Exception as e:
+                pass
+            time.sleep(3)
             print('Done...')
             
 if __name__=='__main__':

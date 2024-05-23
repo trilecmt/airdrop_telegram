@@ -13,12 +13,14 @@ def exec():
         df=pd.read_excel("account.xlsx",dtype={"wave_wallet":str},sheet_name='ocean')
         df=df[(~df['wave_wallet'].isna()) & (df['wave_wallet']!='')]
         df.reset_index(inplace=True)
-        for idx,row in df.iterrows():
+        df_reversed = df[::-1]
+        df_reversed.reset_index(inplace=True)
+        for idx,row in df_reversed.iterrows():
             wallet_key=row['wave_wallet']
             url=row['url']
             print(f'{idx+1}/{len(df)}.Processing profile {row['profile']}')
             response=driver_login.start_profile(PROFILE_NAME)
-
+            print(f'{idx+1}/{len(df)}.Start profile {row['profile']}')
             if response.get("success")==False:
                 try:
                     print(f"close profile {PROFILE_NAME}")

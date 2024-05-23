@@ -39,8 +39,7 @@ class GPMLoginApiV3():
                     "remote_debugging_address":data['data'].get('remote_debugging_address',None),
                     "driver_path":data['data'].get('driver_path',None),
                     "remote_debugging_address":data['data'].get('remote_debugging_address',None)
-                }
-                
+                }  
             }   
         return   {
             "success": False,

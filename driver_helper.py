@@ -9,6 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 import pandas as pd
 import time
 from pathlib import Path
+from selenium.webdriver.remote.webelement import WebElement as webelement
 
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
@@ -40,6 +41,10 @@ def click_element(driver,value:str,index=0,by=By.XPATH):
         pass
           
 
+def web_element_is_clickable(web_element):
+    return web_element.is_displayed() and web_element.is_enabled()
+
+
 def wait_element_appear(driver:webdriver.Chrome,value:str,timeout:int,by=By.XPATH):
     start_time=datetime.datetime.now()
     while datetime.datetime.now()<(start_time+datetime.timedelta(seconds=timeout)):
@@ -47,6 +52,17 @@ def wait_element_appear(driver:webdriver.Chrome,value:str,timeout:int,by=By.XPAT
         if element is not None:
             return element
     return None
+
+def wait_until_element_located(driver:webdriver.Chrome,value:str,timeout:int):
+    try:
+        element = WebDriverWait(driver,20).until(EC.presence_of_element_located((By.XPATH, "//*[text()='Recharge']/following-sibling::span[@class='MuiTypography-root MuiTypography-bodyLittleBold css-18kcc4d' and contains(text(),'Boosts')]")))
+        return element
+    except Exception as e:
+        print(e)
+
+def wait_until_elements_located(driver:webdriver.Chrome,value:str,timeout:int):
+    pass
+
 
 def wait_elements_appear(driver:webdriver.Chrome,value:str,timeout:int,min_count=1,by=By.XPATH):
     start_time=datetime.datetime.now()
