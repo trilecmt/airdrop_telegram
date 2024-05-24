@@ -28,6 +28,10 @@ def delete_cache(driver):
     driver.switch_to.window(driver.window_handles[-1])  # Switch window to the second tab
     driver.get('chrome://settings/clearBrowserData')  # Open your chrome settings.
     perform_actions(driver,Keys.TAB * 3 + Keys.LEFT + Keys.TAB * 6 + Keys.ENTER + Keys.TAB + Keys.ENTER + Keys.TAB + Keys.ENTER + Keys.TAB + Keys.ENTER + Keys.TAB * 2 + Keys.ENTER)  # Tab to the time select and key down to say "All Time" then go to the Confirm button and press Enter
+    close(driver)
+    
+
+def close(driver):
     driver.close()  # Close that window
     driver.switch_to.window(driver.window_handles[0])  # Switch Selenium controls to the original tab to continue normal functionality.
 

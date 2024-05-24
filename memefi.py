@@ -56,7 +56,7 @@ def exec():
                 action.w3c_actions.pointer_action._duration = helper.get_random(1,3)
                 for j in range(100):
                     try:
-                        if driver.current_url!='https://tg-app.memefi.club/game':
+                        if driver.current_url=='https://tg-app.memefi.club/boosters':
                             time.sleep(3)
                             continue
                         try:
@@ -153,14 +153,49 @@ def exec():
                                 
                     #     time.sleep(1.5)
 
-            claim_bot_offline()
+            
+            
+            def upgrade_dame():
+                try:
+                    element=driver_helper.wait_element_appear(driver,timeout=3,value=f"//*[text()='DAMAGE']")
+                    if element  is not None:
+                        if driver_helper.web_element_is_clickable(element):
+                            try:
+                                print(f'Click Upgrade Dame')
+                                element.click()
+                                helper.sleep(2,2) 
+                                print(f'Clicked Upgrade Dame...')
+                                helper.sleep(2,2) 
+                                #click vao nut Dong y     
+                                element_upgrade=driver_helper.wait_element_appear(driver,timeout=3,value=f"//*[text()='upgrade']/parent::button")
+                                if driver_helper.web_element_is_clickable(element_upgrade):
+                                    print(f'Click Upgrade Dame Confirm')
+                                    helper.sleep(2,2) 
+                                    from selenium.webdriver.common.action_chains import ActionChains    
+                                    actionChains = ActionChains(driver)
+                                    actionChains.double_click(element_upgrade).perform()
+                                    # element_upgrade.double_click()
+                                    print(f'Clicked Upgrade Dame Confirm...')
+                                    helper.sleep(2,2) 
 
+                            except Exception as e:
+                                # print(e)  
+                                pass
+                except Exception as e:
+                    print(e)
+
+            upgrade_dame()
+            time.sleep(3)
+            driver.refresh()
+            claim_bot_offline()
+            time.sleep(5)
         try:
             driver.get(url)
             element=driver_helper.wait_element_appear(driver,value="//p[text()='Start Playing']",timeout=5)
             if element is not None:
                 element.click()
                 time.sleep(2)
+
             click_hero(time_click=3)
             while booster():
                 click_hero(time_click=3)
