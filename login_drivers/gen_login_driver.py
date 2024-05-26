@@ -1,6 +1,6 @@
 import requests
 import helper
-from login_drivers.login_driver_base import LoginDriverBase
+from login_drivers.login_driver_base import ChormeDriverConfig, LoginDriverBase
 
 class GenLoginDriver(LoginDriverBase):
 
@@ -20,7 +20,7 @@ class GenLoginDriver(LoginDriverBase):
             response = requests.put(url)
             response.raise_for_status()
             data= response.json()
-            print(data)
+            helper.print_message(data)
             return data
         
         except requests.exceptions.RequestException as err:
@@ -47,7 +47,7 @@ class GenLoginDriver(LoginDriverBase):
     def start_profile(self,profile_name:str):
         profile_id=self.get_profile_id(profile_name)
         if profile_id is None:
-            print(f"profile {profile_name} is not found.")
+            helper.print_message(f"profile {profile_name} is not found.")
             return
         url = f'{self.api_url}/{profile_id}/start'
 
@@ -61,9 +61,10 @@ class GenLoginDriver(LoginDriverBase):
             if response.json().get('success'):
                 return {
                     'success': True,
-                    'data':{
-                        'debugger_address': response.json()['data']["wsEndpoint"].replace("ws://","").split('/')[0]
-                    }
+                    'data': ChormeDriverConfig(
+                        debugger_address=response.json()['data']["wsEndpoint"].replace("ws://","").split('/')[0],
+                        driver_path=None
+                    )
                 }# 'wsEndpoint': response.json().get('data').get('wsEndpoint')}
             else:
                 resEndpoint = self.get_ws_endpoint(id)

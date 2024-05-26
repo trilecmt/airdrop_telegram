@@ -17,7 +17,7 @@ DEFAULT_WINDOW_SIZE=(400,800)
 PROFILE_NAME=constraint.MEMEFI_PROFILE
 
 def exec():
-    driver_login=helper.get_driver_login("GEN_LOGIN")
+    driver_login,driver=helper.start_profile(driver_name='GPM_LOGIN',profile_name="MEMEFI",window_size=DEFAULT_WINDOW_SIZE) 
     df=pd.read_excel("account.xlsx",dtype={"url":str},sheet_name='memefi')
     df=df[(~df['url'].isna()) & (df['url']!='')]
     df.reset_index(inplace=True)
@@ -25,32 +25,18 @@ def exec():
         url=row['url']
         if url is None:
             continue
-        # if idx!=2:
-        #     continue
-        print(f'{idx+1}/{len(df)}.Processing profile {PROFILE_NAME}')
-        response=driver_login.start_profile(PROFILE_NAME)
 
-        if response.get("success")==False:
-            try:
-                print(f"close profile {PROFILE_NAME}")
-                driver_login.close_profile(PROFILE_NAME)
-            except Exception as e:
-                pass
-            continue
-        
-        driver=driver_login.get_driver(debugger_address=response['data']['debugger_address'],window_size=DEFAULT_WINDOW_SIZE)
-       
         def click_hero(time_click):
-            print(f'[{row['profile']}] Attacking hero')
+            helper.print_message(f'[{row['profile']}] Attacking hero')
             xpath_animation="//div[@class='animation ']"
             element=driver_helper.wait_element_appear(driver,timeout=60, value=xpath_animation)
             if element is None:
-                print(f'Not found {xpath_animation}')
+                helper.print_message(f'Not found {xpath_animation}')
             else:
-                print(f'Found {xpath_animation}')
+                helper.print_message(f'Found {xpath_animation}')
             
             for i in range(time_click):
-                print(f'{i}/{time_click}')
+                helper.print_message(f'{i}/{time_click}')
                 element=driver_helper.find_element(driver,value="//div[@class='animation ']")
                 action = webdriver.common.action_chains.ActionChains(driver)
                 action.w3c_actions.pointer_action._duration = helper.get_random(1,3)
@@ -74,13 +60,13 @@ def exec():
 
                 element_countines=driver_helper.find_elements(driver,value="//p[text()='Continue Playing']")
                 if element_countines is not None and len(element_countines)>0:
-                    print('No element Continue Playing')
+                    helper.print_message('No element Continue Playing')
                     driver_helper.click_element(driver,value="//p[text()='Continue Playing']")
                     time.sleep(2)
 
         def booster():
             xpath_booster="//p[text()='Boosters']"
-            print('click Boosters')
+            helper.print_message('click Boosters')
             driver_helper.click_element(driver,value=xpath_booster)
             time.sleep(1)
             driver_helper.wait_until_element_located(driver,timeout=20,value="//*[text()='Recharge']/following-sibling::span[@class='MuiTypography-root MuiTypography-bodyLittleBold css-18kcc4d' and contains(text(),'Boosts')]")
@@ -88,20 +74,20 @@ def exec():
             element = WebDriverWait(driver,20).until(EC.presence_of_element_located((By.XPATH, "//*[text()='Recharge']/following-sibling::span[@class='MuiTypography-root MuiTypography-bodyLittleBold css-18kcc4d' and contains(text(),'Boosts')]")))
             time.sleep(1)
             if  not element.text.replace(" ","").startswith("0/"):
-                print(f'Click Recharge {element.text}')
+                helper.print_message(f'Click Recharge {element.text}')
                 element.click()
                 recharge_elements=driver_helper.wait_elements_appear(driver,timeout=10,min_count=2,value="//p[contains(@class, 'MuiTypography-root') and contains(@class, 'MuiTypography-body1') and contains(@class, 'css-ibzb0o') and text()='claim boost']")
                 if recharge_elements is not  None: 
                     try:
                         time.sleep(2)
-                        print('Click Recharge')
+                        helper.print_message('Click Recharge')
                         recharge_elements[1].click()
-                        print("Recharge full mana.Continue click...")
+                        helper.print_message("Recharge full mana.Continue click...")
                         return True
                     except Exception as e:
-                        print(e)
+                        helper.print_message(e)
             else:
-                print("No Recharge")
+                helper.print_message("No Recharge")
                 
             
             def claim_bot_offline():
@@ -110,7 +96,7 @@ def exec():
                 time.sleep(3)
                 tap_bot_elements=driver_helper.wait_elements_appear(driver,timeout=5,value="//span[contains(text(), 'TAP BOT')] | //span[contains(text(), 'ACTIVATE TAP BOT')]")
                 if tap_bot_elements is not None:
-                    print(f'Click Tab Bot')
+                    helper.print_message(f'Click Tab Bot')
                     tap_bot_elements[0].click()
                     helper.sleep(2,2)
                     element=driver_helper.wait_element_appear(driver,timeout=3,value=f"//p[text()='Claim coins']/parent::button")
@@ -118,25 +104,25 @@ def exec():
                         
                             if driver_helper.web_element_is_clickable(element):
                                 try:
-                                    print(f'Click Claim coins')
+                                    helper.print_message(f'Click Claim coins')
                                     element.click()
                                     helper.sleep(2,2) 
-                                    print(f'Clicked Claim coins...')
+                                    helper.print_message(f'Clicked Claim coins...')
                                 except Exception as e:
                                     pass
-                            # print(e)  
+                            # helper.print_message(e)  
                             
                     time.sleep(1.5)
                     element=driver_helper.wait_element_appear(driver,timeout=3,value=f"//p[text()='Activate Bot']/parent::button")
                     if element  is not None:
                         if driver_helper.web_element_is_clickable(element):
                             try:
-                                print(f'Click Activate Bot')
+                                helper.print_message(f'Click Activate Bot')
                                 element.click()
                                 helper.sleep(2,2) 
-                                print(f'Clicked Activate Bot...')
+                                helper.print_message(f'Clicked Activate Bot...')
                             except Exception as e:
-                                # print(e)  
+                                # helper.print_message(e)  
                                 pass
                             
                     time.sleep(1.5)
@@ -144,12 +130,12 @@ def exec():
                     #     element=driver_helper.wait_elements_appear(driver,timeout=3,value=f"//p[text()='Claim coins']/parent::button")
                     #     if element  is not None:
                     #         try:
-                    #             print(f'Click {key}')
+                    #             helper.print_message(f'Click {key}')
                     #             element.click()
                     #             helper.sleep(2,2) 
-                    #             print(f'Clicked {key}...')
+                    #             helper.print_message(f'Clicked {key}...')
                     #         except Exception as e:
-                    #             print(e)  
+                    #             helper.print_message(e)  
                                 
                     #     time.sleep(1.5)
 
@@ -161,28 +147,28 @@ def exec():
                     if element  is not None:
                         if driver_helper.web_element_is_clickable(element):
                             try:
-                                print(f'Click Upgrade Dame')
+                                helper.print_message(f'Click Upgrade Dame')
                                 element.click()
                                 helper.sleep(2,2) 
-                                print(f'Clicked Upgrade Dame...')
+                                helper.print_message(f'Clicked Upgrade Dame...')
                                 helper.sleep(2,2) 
                                 #click vao nut Dong y     
                                 element_upgrade=driver_helper.wait_element_appear(driver,timeout=3,value=f"//*[text()='upgrade']/parent::button")
                                 if driver_helper.web_element_is_clickable(element_upgrade):
-                                    print(f'Click Upgrade Dame Confirm')
+                                    helper.print_message(f'Click Upgrade Dame Confirm')
                                     helper.sleep(2,2) 
                                     from selenium.webdriver.common.action_chains import ActionChains    
                                     actionChains = ActionChains(driver)
                                     actionChains.double_click(element_upgrade).perform()
                                     # element_upgrade.double_click()
-                                    print(f'Clicked Upgrade Dame Confirm...')
+                                    helper.print_message(f'Clicked Upgrade Dame Confirm...')
                                     helper.sleep(2,2) 
 
                             except Exception as e:
-                                # print(e)  
+                                # helper.print_message(e)  
                                 pass
                 except Exception as e:
-                    print(e)
+                    helper.print_message(e)
 
             upgrade_dame()
             time.sleep(3)
@@ -201,18 +187,21 @@ def exec():
                 click_hero(time_click=3)
 
         except Exception as e:
-            print(e)
+            helper.print_message(e)
         finally:
-            try:       
-                driver_helper.delete_cache(driver)
-            except Exception as e:
-                pass
+            # try:       
+            #     driver_helper.delete_cache(driver,is_close=False)
+            # except Exception as e:
+            #     pass
             time.sleep(3)
-            print('Done...')
-            
+            helper.print_message('Done...')
+
+    helper.print_message(f"Close profile {PROFILE_NAME}")
+    driver_login.close_profile(PROFILE_NAME)
+
 if __name__=='__main__':
     while True:
         try:
             exec()
         except Exception as e:
-            print(e)
+            helper.print_message(e)

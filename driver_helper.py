@@ -10,7 +10,7 @@ import pandas as pd
 import time
 from pathlib import Path
 from selenium.webdriver.remote.webelement import WebElement as webelement
-
+import helper
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
@@ -21,14 +21,16 @@ def perform_actions(driver, keys):
         actions.send_keys(keys[i])
         time.sleep(.3) #  adjust this if its going to fast\slow
         actions.perform()
-    print("Actions performed!")
+    helper.print_message("Actions performed!")
 
-def delete_cache(driver):
+def delete_cache(driver,is_close=True):
     driver.execute_script("window.open('')")  # Create a separate tab than the main one
+    driver.close()
     driver.switch_to.window(driver.window_handles[-1])  # Switch window to the second tab
     driver.get('chrome://settings/clearBrowserData')  # Open your chrome settings.
     perform_actions(driver,Keys.TAB * 3 + Keys.LEFT + Keys.TAB * 6 + Keys.ENTER + Keys.TAB + Keys.ENTER + Keys.TAB + Keys.ENTER + Keys.TAB + Keys.ENTER + Keys.TAB * 2 + Keys.ENTER)  # Tab to the time select and key down to say "All Time" then go to the Confirm button and press Enter
-    close(driver)
+    if is_close:
+        close(driver)
     
 
 def close(driver):
@@ -41,7 +43,7 @@ def click_element(driver,value:str,index=0,by=By.XPATH):
         element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((by, value)))
         element.click()
     except Exception as e:
-        print(e)
+        helper.print_message(e)
         pass
           
 
@@ -57,12 +59,17 @@ def wait_element_appear(driver:webdriver.Chrome,value:str,timeout:int,by=By.XPAT
             return element
     return None
 
+def click_at(action,element,x,y):
+    action.move_to_element_with_offset(element, x, y)
+    action.click()
+    action.perform()
+    
 def wait_until_element_located(driver:webdriver.Chrome,value:str,timeout:int):
     try:
-        element = WebDriverWait(driver,20).until(EC.presence_of_element_located((By.XPATH, "//*[text()='Recharge']/following-sibling::span[@class='MuiTypography-root MuiTypography-bodyLittleBold css-18kcc4d' and contains(text(),'Boosts')]")))
+        element = WebDriverWait(driver,timeout).until(EC.presence_of_element_located((By.XPATH, "//*[text()='Recharge']/following-sibling::span[@class='MuiTypography-root MuiTypography-bodyLittleBold css-18kcc4d' and contains(text(),'Boosts')]")))
         return element
     except Exception as e:
-        print(e)
+        helper.print_message(e)
 
 def wait_until_elements_located(driver:webdriver.Chrome,value:str,timeout:int):
     pass
