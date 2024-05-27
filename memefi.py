@@ -1,3 +1,4 @@
+from multiprocessing import Pool
 from selenium import webdriver
 import time
 import pandas as pd
@@ -14,15 +15,18 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 DEFAULT_WINDOW_SIZE=(400,800)
-PROFILE_NAME=constraint.MEMEFI_PROFILE
 
-def exec():
-    driver_login,driver=helper.start_profile(driver_name='GPM_LOGIN',profile_name="MEMEFI",window_size=DEFAULT_WINDOW_SIZE) 
+
+
+def exec(profile):
+    driver_login,driver=helper.start_profile(driver_name='GPM_LOGIN',profile_name=profile['name'],window_size=DEFAULT_WINDOW_SIZE) 
     df=pd.read_excel("account.xlsx",dtype={"url":str},sheet_name='memefi')
-    df=df[(~df['url'].isna()) & (df['url']!='')]
+    df=df[(~df['url'].isna()) & (df['url']!='') & (df['profile']==profile['name'])]
+
     df.reset_index(inplace=True)
     for idx,row in df.iterrows():
         url=row['url']
+        is_upgrade_dame=str(row['upgrade_dame'])
         if url is None:
             continue
 
@@ -142,6 +146,8 @@ def exec():
             
             
             def upgrade_dame():
+                if is_upgrade_dame!="1":
+                    return
                 try:
                     element=driver_helper.wait_element_appear(driver,timeout=3,value=f"//*[text()='DAMAGE']")
                     if element  is not None:
@@ -196,12 +202,20 @@ def exec():
             time.sleep(3)
             helper.print_message('Done...')
 
-    helper.print_message(f"Close profile {PROFILE_NAME}")
-    driver_login.close_profile(PROFILE_NAME)
+    helper.print_message(f"Close profile {profile['name']}")
+    driver_login.close_profile(profile['name'])
 
 if __name__=='__main__':
     while True:
         try:
-            exec()
+            count_processes=int(input("# profile chạy cùng lúc:"))
+            profiles=[]
+            df=pd.read_excel("account.xlsx",dtype={"url":str},sheet_name='memefi')
+            df=df[(~df['url'].isna()) & (df['url']!='')]
+            for profile in list(df['profile'].unique()):
+                profiles.append({"name":profile})
+            with Pool(count_processes) as p:
+                p.map(exec, profiles)
+            time.sleep(df['delay'].iat[0])
         except Exception as e:
             helper.print_message(e)
