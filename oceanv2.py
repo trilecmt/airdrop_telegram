@@ -1,3 +1,4 @@
+import traceback
 import pandas as pd
 import driver_helper
 import time
@@ -36,7 +37,8 @@ def claim_a_wallet(driver,wallet_name):
             helper.print_message('click back')
             driver.back()
     except Exception as e:
-        helper.print_message(e)
+        print(traceback.format_exc())
+
         
 def exec():
     try:    
@@ -81,21 +83,21 @@ def exec():
                 count+=1
 
         except Exception as e:
-            pass
+            print(traceback.format_exc())
 
     except Exception as e:
-        helper.print_message(e)
+        print(traceback.format_exc())
     finally:
         try:
             driver_login.close_profile(PROFILE_NAME)
             time.sleep(3)
         except Exception as e:
-            pass
+            print(traceback.format_exc())
                  
 if __name__=='__main__':
     while True:
         try:
             exec()
         except Exception as e:
+            print(traceback.format_exc())
             helper.print_message(e)
-            pass

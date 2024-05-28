@@ -22,7 +22,7 @@ def write_config(section, key, value,file_path='config.ini'):
     cfgfile.close()
 
 def print_message(message):
-    print(f'{datetime.datetime.now(datetime.UTC)+datetime.timedelta(hours=7)} {message}')
+    print(f'{datetime.datetime.utcnow()+datetime.timedelta(hours=7)} {message}')
 
 def delete_profile(driver_name,profile_name):
     driver_login=get_driver_login(driver_name)

@@ -39,8 +39,9 @@ def exec():
             element=driver_helper.wait_element_appear(driver,value="//div[@class='user-tap-button-inner']",timeout=5)
    
             if element is not None:
-                for i in range(3000):
+                for i in range(10000):
                     element.click()
+                    time.sleep(2)
            
 
         except Exception as e:
@@ -60,5 +61,6 @@ if __name__=='__main__':
     while True:
         try:
             exec()
+            time.sleep(30)
         except Exception as e:
             helper.print_message(e)

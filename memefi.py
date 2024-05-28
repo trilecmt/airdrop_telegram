@@ -31,7 +31,7 @@ def exec(profile):
             continue
 
         def click_hero(time_click):
-            helper.print_message(f'[{row['profile']}] Attacking hero')
+            helper.print_message(f"[{row['profile']}] Attacking hero")
             xpath_animation="//div[@class='animation ']"
             element=driver_helper.wait_element_appear(driver,timeout=60, value=xpath_animation)
             if element is None:
@@ -206,9 +206,10 @@ def exec(profile):
     driver_login.close_profile(profile['name'])
 
 if __name__=='__main__':
+    count_processes=int(input("# profile:"))
     while True:
         try:
-            count_processes=int(input("# profile chạy cùng lúc:"))
+            
             profiles=[]
             df=pd.read_excel("account.xlsx",dtype={"url":str},sheet_name='memefi')
             df=df[(~df['url'].isna()) & (df['url']!='')]
