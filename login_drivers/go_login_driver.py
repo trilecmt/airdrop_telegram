@@ -33,7 +33,7 @@ class GoLoginDriver:
     def close_profile(self,profile_name:str):
         url=f'{self.api_url}/api/v3/profiles/close/{self.get_profile_id(profile_name)}'
         response=helper.request_api(url)
-        print(response)
+        helper.print_message(response)
         return {"success":response['success']}
 
 
@@ -62,8 +62,8 @@ class GoLoginDriver:
     
     def close(self):
         self.driver.quit()
-        print('Driver quitted')
+        helper.print_message('Driver quitted')
         time.sleep(5)
         self.gl.stop()   
-        print('Stopped Profile')
+        helper.print_message('Stopped Profile')
         time.sleep(5)

@@ -3,6 +3,11 @@ from selenium.webdriver.chrome.service import Service
 import constraint
 import login_drivers.gen_login_driver
 
+class ChormeDriverConfig:
+    def __init__(self,debugger_address,driver_path) -> None:
+        self.debugger_address=debugger_address
+        self.driver_path=driver_path
+        
 def get_driver_login(driver_name:str):
         if driver_name=="GEN_LOGIN":
             driver_login=login_drivers.gen_login_driver.GenLoginDriver(api_url='http://localhost:55550/backend/profiles')
@@ -27,9 +32,6 @@ class LoginDriverBase:
     def start_profile(self,profile_name:str):
         pass
             
-    def get_driver(self):
-        pass
-
     def get_driver(self,debugger_address:str,window_size:tuple=None,chrome_driver_path=None):
         if window_size is None:
             window_size=constraint.DEFAULT_WINDOW_SIZE
