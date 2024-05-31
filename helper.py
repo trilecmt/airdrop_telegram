@@ -6,6 +6,7 @@ import login_drivers.gpm_login_driver
 import time
 import datetime
 import configparser
+import json
  
  
 def read_config(section,key,file_path='config.ini'):
@@ -70,7 +71,7 @@ def request_api(api_url):
         response.raise_for_status()  # Raise HTTPError for bad status codes
         return response.json()
     except requests.exceptions.RequestException as e:
-        print_message("Error:", e)
+        print_message(f"Error: {e}" )
         return None
 
 def get_random(min,max):
@@ -81,3 +82,9 @@ def sleep(min,max=None):
         time.sleep(min)
     else:
         time.sleep(get_random(min,max))
+
+def post_api(url_get_info, headers, payload):
+    response_info  = requests.post(url_get_info, headers=headers, json= payload)
+    if response_info.status_code != 200:
+        raise ValueError("Error: Couldn't fetch user data")
+    return json.loads(response_info.text)
