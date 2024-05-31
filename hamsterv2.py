@@ -116,7 +116,7 @@ def exec(token):
             click_count = round(available_tap/earn_per_tap)+1
             return click_count, available_tap
         elif cooldown > 0 :
-            print("NEXT BOOST:", str(int(cooldown) // 1000 // 3600) + "H" + str(int(cooldown) // 1000 % 60) + "M")
+            print("NEXT BOOST:", str(int( cooldown//(60*60))).zfill(2) + "H" + str(int( cooldown %(60*60) // 60 )).zfill(2) + "M" + str(int( cooldown %(60*60) % 60 )).zfill(2) + "S")
             return 0,0
         else:
             print("No More Boost Left")
@@ -147,5 +147,5 @@ def exec(token):
 
 if __name__=="__main__":
     while True:
-        exec(token='')
+        exec(token='1717072879997cx0e93iKMY6FncfQfl7LXxSXon5gAAx9lFiXs0iCAdJCs5S8h7BennGLOwoFwmAE1266458602')
         time.sleep(120)
