@@ -1,9 +1,40 @@
 import time
 import requests
+import brotli
+from pprint import pprint
+import json
+import helper
+import numpy as np
+import random
 
 def exec(token):
-    try:
-        
+    headers_info = {
+            "Accept-Encoding": "gzip, deflate, br, zstd",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Connection": "keep-alive",
+            "Content-Length": "0",
+            "Host": "api.hamsterkombat.io",
+            "Origin": "https://hamsterkombat.io",
+            "Referer": "https://hamsterkombat.io/",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-site",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Authorization": f"Bearer {token}",
+        }
+    
+    def get_remain_available_tap():
+        url_get_info = "https://api.hamsterkombat.io/clicker/sync"        
+        response_info  = helper.post_api(url_get_info, headers=headers_info, payload={})
+        available_tap = response_info['clickerUser']['availableTaps']
+        print(f"Available Tap Sync: {available_tap}")
+        print(f"Earn per Tap: {response_info['clickerUser']['earnPerTap']}")
+        return available_tap
+    
+    
+    
+    def click(available_tap):
+        print("=================")
         url = "https://api.hamsterkombat.io/clicker/tap"
         headers = {
             "Accept-Encoding": "gzip, deflate, br, zstd",
@@ -24,22 +55,94 @@ def exec(token):
             "Sec-Ch-Ua-Mobile": "?0",
             "Sec-Ch-Ua-Platform": '"Windows"',
         }
-
+        
         payload = {
-            "count": 1000,
-            "availableTaps": 4000,
+            "count": random.randint(1, 30),
+            "availableTaps": available_tap,
             "timestamp": int(time.time())
         }
+        
+        response_data = helper.post_api(url, headers=headers, payload=payload)        
 
-        response = requests.post(url, headers=headers, json=payload)
+        id = response_data['clickerUser']['id']
+        lvl = response_data['clickerUser']['level']
+        avai_tap = response_data['clickerUser']['availableTaps']
+        balance = round(response_data['clickerUser']['balanceCoins'],0)     
+        earn_per_tap = response_data['clickerUser']["earnPerTap"]   
+        click_count = round(available_tap/earn_per_tap)+1
+        print(f"User Id: {id}")
+        print(f"Current Level: {lvl}")
+        print(f"Available Tap: {avai_tap}")
+        print(f"Current Coin: {balance}")
+        return avai_tap
+    
+    def get_boost():
+        print("===Getting Boost===")
+        url_boost = "https://api.hamsterkombat.io/clicker/boosts-for-buy"
+        
+        response_info  = helper.post_api(url_boost, headers=headers_info, payload={})
+        boost_list = response_info["boostsForBuy"]
+        for element in boost_list:
+            if element["id"] == "BoostFullAvailableTaps":
+                remain_boost = element["maxLevel"] - element["level"] -1
+                cooldown = element["cooldownSeconds"]
+        if cooldown == 0 and remain_boost>0:
+            url = "https://api.hamsterkombat.io/clicker/buy-boost"
+            headers = {
+                "Accept-Encoding": "gzip, deflate, br, zstd",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Connection": "keep-alive",
+                "Content-Length": "59",
+                "Host": "api.hamsterkombat.io",
+                "Origin": "https://hamsterkombat.io",
+                "Referer": "https://hamsterkombat.io/",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "same-site",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "Accept": "application/json",
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "boostId": "BoostFullAvailableTaps",
+                "timestamp": int(time.time())
+            }
+            response_info  = helper.post_api(url, headers=headers, payload=payload)
+            available_tap = response_info['clickerUser']['availableTaps']
+            print(f"Available Tap After Boost: {available_tap}")
+            return available_tap
+        elif cooldown > 0 :
+            print("NEXT BOOST:", str(int( cooldown//(60*60))).zfill(2) + "H" + str(int( cooldown %(60*60) // 60 )).zfill(2) + "M" + str(int( cooldown %(60*60) % 60 )).zfill(2) + "S")
+            return 0
+        else:
+            print("No More Boost Left")
+            return 0
+    
+    def looping_click(available_tap):
+        while True:
+            remain_tap = click(available_tap)
+            time.sleep(5)
+            if remain_tap ==0:
+                break
+    
+    try:
+        print("*********************************************************")        
+        available_tap =  get_remain_available_tap()        
+        looping_click(available_tap)
+        time.sleep(5)
+        available_tap = get_boost()
+        if available_tap != 0:
+            looping_click(available_tap)        
+        print("*********************************************************")
 
-        print(response.status_code)
-        # print(response.text)  # If the response is JSON
-
+        
     except Exception as e:
+        import traceback
+        print(traceback.format_exc())
         pass
 
 if __name__=="__main__":
     while True:
-        exec(token='1716787825438Vh7Nj3NbZyMtpTdHzzEpEVZhc0lEIIjAOtBlUW8kCk6da2VGyLmPuXU8AUjtHYUK7119671832')
-        time.sleep(60)
+        exec(token='1717072879997cx0e93iKMY6FncfQfl7LXxSXon5gAAx9lFiXs0iCAdJCs5S8h7BennGLOwoFwmAE1266458602')
+        time.sleep(120)
