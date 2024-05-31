@@ -28,13 +28,12 @@ def exec(token):
         response_info  = helper.post_api(url_get_info, headers=headers_info, payload={})
         available_tap = response_info['clickerUser']['availableTaps']
         print(f"Available Tap Sync: {available_tap}")
-        earn_per_tap = response_info['clickerUser']["earnPerTap"]
-        click_count = round(available_tap/earn_per_tap)+1
-        return click_count, available_tap
+        print(f"Earn per Tap: {response_info['clickerUser']['earnPerTap']}")
+        return available_tap
     
     
     
-    def click(click_count, available_tap):
+    def click(available_tap):
         print("=================")
         url = "https://api.hamsterkombat.io/clicker/tap"
         headers = {
@@ -58,7 +57,7 @@ def exec(token):
         }
         
         payload = {
-            "count": random.randint(1, click_count),
+            "count": random.randint(1, 30),
             "availableTaps": available_tap,
             "timestamp": int(time.time())
         }
@@ -109,34 +108,32 @@ def exec(token):
                 "boostId": "BoostFullAvailableTaps",
                 "timestamp": int(time.time())
             }
-            response_info  = helper.post_api(url_boost, headers=headers, payload=payload)
+            response_info  = helper.post_api(url, headers=headers, payload=payload)
             available_tap = response_info['clickerUser']['availableTaps']
             print(f"Available Tap After Boost: {available_tap}")
-            earn_per_tap = response_info['clickerUser']["earnPerTap"]
-            click_count = round(available_tap/earn_per_tap)+1
-            return click_count, available_tap
+            return available_tap
         elif cooldown > 0 :
             print("NEXT BOOST:", str(int( cooldown//(60*60))).zfill(2) + "H" + str(int( cooldown %(60*60) // 60 )).zfill(2) + "M" + str(int( cooldown %(60*60) % 60 )).zfill(2) + "S")
-            return 0,0
+            return 0
         else:
             print("No More Boost Left")
-            return 0,0
+            return 0
     
-    def looping_click(available_tap, click_count):
+    def looping_click(available_tap):
         while True:
-            remain_tap = click(available_tap, click_count)
-            time.sleep(2)
+            remain_tap = click(available_tap)
+            time.sleep(5)
             if remain_tap ==0:
                 break
     
     try:
         print("*********************************************************")        
-        click_count, available_tap =  get_remain_available_tap()        
-        looping_click(available_tap, click_count)
+        available_tap =  get_remain_available_tap()        
+        looping_click(available_tap)
         time.sleep(5)
-        click_count, available_tap = get_boost()
-        if click_count != 0:
-            looping_click(available_tap, click_count)        
+        available_tap = get_boost()
+        if available_tap != 0:
+            looping_click(available_tap)        
         print("*********************************************************")
 
         
