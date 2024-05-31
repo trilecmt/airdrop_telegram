@@ -4,7 +4,6 @@ import requests
 from pprint import pprint
 import json
 import helper
-import numpy as np
 import pandas as pd
 import random
 
