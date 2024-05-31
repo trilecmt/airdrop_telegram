@@ -136,7 +136,7 @@ def exec(token, list_names: str):
         list_upgrade.sort_values(["roi"],ascending=False,ignore_index=True,inplace=True)
         if list_upgrade.empty:
             print("===No more upgrades available===")
-            time_upgraded =10
+            time_upgraded =11
             return
         list_upgrade = list_upgrade.to_dict("records")
         itemupgrade = list_upgrade[0]
