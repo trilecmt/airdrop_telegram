@@ -1,6 +1,6 @@
 import time
+import pandas as pd
 import requests
-import brotli
 from pprint import pprint
 import json
 import helper
@@ -142,7 +142,23 @@ def exec(token):
         print(traceback.format_exc())
         pass
 
-if __name__=="__main__":
+
+def main(delay_time):
+    try:
+        df=pd.read_excel("account.xlsx",dtype={"url":str},sheet_name='hamster')
+        df=df[(~df['url'].isna()) & (df['url']!='')]
+        df.reset_index(inplace=True)
+        for idx,row in df.iterrows():
+            exec(row['token'])
+            time.sleep(10)
+            
+        time.sleep(delay_time)
+    except Exception as e:
+        print(e)
+
+if __name__=='__main__':
     while True:
-        exec(token='1717072879997cx0e93iKMY6FncfQfl7LXxSXon5gAAx9lFiXs0iCAdJCs5S8h7BennGLOwoFwmAE1266458602')
-        time.sleep(120)
+        try:
+            main(delay_time=60)                      
+        except Exception as e:
+            print(e)

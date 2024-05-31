@@ -26,6 +26,7 @@ def exec(profile):
     df.reset_index(inplace=True)
     for idx,row in df.iterrows():
         url=row['url']
+        url=url.replace("tgWebAppPlatform=weba","tgWebAppPlatform=android").replace("tgWebAppPlatform=web","tgWebAppPlatform=android")
         is_upgrade_dame=str(row['upgrade_dame'])
         if url is None:
             continue
@@ -183,6 +184,14 @@ def exec(profile):
             time.sleep(5)
         try:
             driver.get(url)
+            time.sleep(3)
+            element=driver_helper.wait_element_appear(driver,value="//*[text()='Best experienced on mobile. Play on your phone']",timeout=15)
+            if element is not None:
+                print("Change url mobile")
+                url=url.replace("tgWebAppPlatform=weba","tgWebAppPlatform=android").replace("tgWebAppPlatform=web","tgWebAppPlatform=android")
+                print(url)
+                driver.refresh()
+                time.sleep(3)
             element=driver_helper.wait_element_appear(driver,value="//p[text()='Start Playing']",timeout=5)
             if element is not None:
                 element.click()

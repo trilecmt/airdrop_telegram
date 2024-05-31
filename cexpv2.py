@@ -148,16 +148,23 @@ def exec(url,proxy_url):
     print(50*"*")
     print(50*"")
 
+
+def main(delay_time):
+    try:
+        df=pd.read_excel("account.xlsx",dtype={"url":str},sheet_name='cexp')
+        df=df[(~df['url'].isna()) & (df['url']!='')]
+        df.reset_index(inplace=True)
+        for idx,row in df.iterrows():
+            exec(row['url'],row['proxy'])
+            time.sleep(10)
+        
+        time.sleep(delay_time)
+    except Exception as e:
+        print(e)
+
 if __name__=='__main__':
-    delay_time=60 # 60s claim 1 nick
     while True:
         try:
-            df=pd.read_excel("account.xlsx",dtype={"url":str},sheet_name='cexp')
-            df=df[(~df['url'].isna()) & (df['url']!='')]
-            df.reset_index(inplace=True)
-            for idx,row in df.iterrows():
-                exec(row['url'],row['proxy'])
-                time.sleep(delay_time)
-                             
+            main(delay_time=60)                      
         except Exception as e:
             print(e)
