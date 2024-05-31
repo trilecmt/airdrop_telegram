@@ -86,5 +86,7 @@ def sleep(min,max=None):
 def post_api(url_get_info, headers, payload):
     response_info  = requests.post(url_get_info, headers=headers, json= payload)
     if response_info.status_code != 200:
+        print(f"StatusCode: {response_info.status_code}")
+        print(f"Response text: {response_info.text}")
         raise ValueError("Error: Couldn't fetch user data")
     return json.loads(response_info.text)
