@@ -6,9 +6,14 @@ import json
 import helper
 import random
 import traceback
+from helper.helper_session import MySession
+from helper.utils import print_message, sleep
+from datetime import datetime, timedelta
 
 
-def exec(token):
+def exec(token, proxy_url:str):
+    session=MySession()
+    session.set_proxy(proxy_url)
     url= "https://api-gw-tg.memefi.club/graphql"
     header = {
         "Accept-Encoding": "gzip, deflate, br, zstd",
@@ -39,11 +44,11 @@ def exec(token):
         "variables": {},
         "query": "query QueryTelegramUserMe {\n  telegramUserMe {\n    firstName\n    lastName\n    telegramId\n    username\n    referralCode\n    isDailyRewardClaimed\n    referral {\n      username\n      lastName\n      firstName\n      bossLevel\n      coinsAmount\n      __typename\n    }\n    isReferralInitialJoinBonusAvailable\n    league\n    leagueIsOverTop10k\n    leaguePosition\n    _id\n    opens {\n      isAvailable\n      openType\n      __typename\n    }\n    __typename\n  }\n}"
         }
-        response_data = helper.post_api(url, headers=header, payload=payload)
+        response_data = session.exec_post(url, headers=header, data=payload)
         data = response_data["data"]
         key = next(iter(data)) 
-        print(f'UserName: {data[key]["firstName"]+" " + data[key]["lastName"]}')
-        print(f'UserId: {data[key]["telegramId"]}')
+        print_message(f'UserName: {data[key]["firstName"]+" " + data[key]["lastName"]}')
+        print_message(f'UserId: {data[key]["telegramId"]}')
         time.sleep(2)
         
     def print_response(response_data:dict):
@@ -57,20 +62,72 @@ def exec(token):
         current_coin = data[key]['coinsAmount']   
         att_dmg = data[key]['weaponLevel'] +1
         refill_amt = data[key]['freeBoosts']['currentRefillEnergyAmount'] 
-        print(f"Current Coin: {current_coin}, Energy: {current_energy}/{max_energy}. Recharge left: {refill_amt}") 
+        print_message(f"Current Coin: {current_coin}, Energy: {current_energy}/{max_energy}. Recharge left: {refill_amt}") 
         return data[key]['nonce']
     
     def get_game_config()-> str:
-        print("===Getting Game Config===")
+        print_message("===Getting Game Config===")
         payload = {
         "operationName": "QUERY_GAME_CONFIG",
         "variables": {},
         "query": "query QUERY_GAME_CONFIG {\n  telegramGameGetConfig {\n    ...FragmentBossFightConfig\n    __typename\n  }\n}\n\nfragment FragmentBossFightConfig on TelegramGameConfigOutput {\n  _id\n  coinsAmount\n  currentEnergy\n  maxEnergy\n  weaponLevel\n  energyLimitLevel\n  energyRechargeLevel\n  tapBotLevel\n  currentBoss {\n    _id\n    level\n    currentHealth\n    maxHealth\n    __typename\n  }\n  freeBoosts {\n    _id\n    currentTurboAmount\n    maxTurboAmount\n    turboLastActivatedAt\n    turboAmountLastRechargeDate\n    currentRefillEnergyAmount\n    maxRefillEnergyAmount\n    refillEnergyLastActivatedAt\n    refillEnergyAmountLastRechargeDate\n    __typename\n  }\n  bonusLeaderDamageEndAt\n  bonusLeaderDamageStartAt\n  bonusLeaderDamageMultiplier\n  nonce\n  __typename\n}"
         }        
-        response_data = helper.post_api(url, headers=header, payload=payload) 
+        response_data = session.exec_post(url, headers=header, data=payload) 
         last_id = print_response(response_data =response_data)
         time.sleep(3)    
         return last_id
+    
+    def get_date_format(date_str : str):
+        date_format = '%Y-%m-%dT%H:%M:%S.%fZ'
+        if date_str is None:
+            return ""
+        else:
+            return datetime.strptime(date_str, date_format) + timedelta (hours=7)
+    
+    
+    def get_tapbot_config():        
+        print_message("===Getting Tapbot Config===")
+        payload= {
+        "operationName": "TapbotConfig",
+        "variables": {},
+        "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nquery TapbotConfig {\n  telegramGameTapbotGetConfig {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
+        }
+        response_data = session.exec_post(url, headers=header, data=payload)
+        data = response_data["data"]
+        key = next(iter(data))
+        is_purchase = data[key]["isPurchased"]
+        remain= data[key]["totalAttempts"] - data[key]["usedAttempts"]        
+        end_at = get_date_format(data[key]["endsAt"])
+        format_print = "%H:%M %d/%m/%Y"
+        if not is_purchase:
+            print_message(f"TapBot is not purchased")
+        elif end_at == "":
+            print_message(f"TapBot is not activated")
+            print_message(f"TapBot remain time: {remain}")
+        else:
+            print_message(f"TapBot remain time: {remain}")
+            print_message(f"Tapbot claim time: {end_at}")            
+        
+        return is_purchase, remain, end_at
+        
+    def tapbot_claim():
+        print_message("===Claiming Tapbot===")
+        payload = {
+        "operationName": "TapbotClaim",
+        "variables": {},
+        "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nmutation TapbotClaim {\n  telegramGameTapbotClaimCoins {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
+        }
+        response_data = session.exec_post(url, headers=header, data=payload)
+    
+    def tapbot_activate():
+        print_message("===Activating Tapbot===")
+        payload = {
+        "operationName": "TapbotStart",
+        "variables": {},
+        "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nmutation TapbotStart {\n  telegramGameTapbotStart {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
+        }
+        response_data = session.exec_post(url, headers=header, data=payload)       
+        
     
     def attack(last_id: str):
         nonlocal time_att        
@@ -87,7 +144,7 @@ def exec(token):
             },
             "query": "mutation MutationGameProcessTapsBatch($payload: TelegramGameTapsBatchInput!) {\n  telegramGameProcessTapsBatch(payload: $payload) {\n    ...FragmentBossFightConfig\n    __typename\n  }\n}\n\nfragment FragmentBossFightConfig on TelegramGameConfigOutput {\n  _id\n  coinsAmount\n  currentEnergy\n  maxEnergy\n  weaponLevel\n  energyLimitLevel\n  energyRechargeLevel\n  tapBotLevel\n  currentBoss {\n    _id\n    level\n    currentHealth\n    maxHealth\n    __typename\n  }\n  freeBoosts {\n    _id\n    currentTurboAmount\n    maxTurboAmount\n    turboLastActivatedAt\n    turboAmountLastRechargeDate\n    currentRefillEnergyAmount\n    maxRefillEnergyAmount\n    refillEnergyLastActivatedAt\n    refillEnergyAmountLastRechargeDate\n    __typename\n  }\n  bonusLeaderDamageEndAt\n  bonusLeaderDamageStartAt\n  bonusLeaderDamageMultiplier\n  nonce\n  __typename\n}"
         }
-        response_data = helper.post_api(url, headers=header, payload=payload) 
+        response_data = session.exec_post(url, headers=header, data=payload) 
         print(f"--Attack time: {time_att}, tap {count_tap} times")
         last_id = print_response(response_data =response_data)
         time_att += 1
@@ -100,7 +157,7 @@ def exec(token):
     
     def get_recharge_boost():
         nonlocal time_att  
-        print("===Getting Boost===")
+        print_message("===Getting Boost===")
         payload = {
         "operationName": "telegramGameActivateBooster",
         "variables": {
@@ -108,22 +165,32 @@ def exec(token):
         },
         "query": "mutation telegramGameActivateBooster($boosterType: BoosterType!) {\n  telegramGameActivateBooster(boosterType: $boosterType) {\n    ...FragmentBossFightConfig\n    __typename\n  }\n}\n\nfragment FragmentBossFightConfig on TelegramGameConfigOutput {\n  _id\n  coinsAmount\n  currentEnergy\n  maxEnergy\n  weaponLevel\n  energyLimitLevel\n  energyRechargeLevel\n  tapBotLevel\n  currentBoss {\n    _id\n    level\n    currentHealth\n    maxHealth\n    __typename\n  }\n  freeBoosts {\n    _id\n    currentTurboAmount\n    maxTurboAmount\n    turboLastActivatedAt\n    turboAmountLastRechargeDate\n    currentRefillEnergyAmount\n    maxRefillEnergyAmount\n    refillEnergyLastActivatedAt\n    refillEnergyAmountLastRechargeDate\n    __typename\n  }\n  bonusLeaderDamageEndAt\n  bonusLeaderDamageStartAt\n  bonusLeaderDamageMultiplier\n  nonce\n  __typename\n}"
         }
-        response_data = helper.post_api(url, headers=header, payload=payload)
+        response_data = session.exec_post(url, headers=header, data=payload)
         last_id = print_response(response_data=response_data)
         time_att = 0
         time.sleep(3)
         return last_id
     
     try:
-        print("*********************************************************")
-        
+        print_message("*********************************************************")
+                
         get_user_info()        
         last_id = get_game_config()
         action_attack(last_id)
         while refill_amt>0:
             last_id = get_recharge_boost()
-            action_attack(last_id)                
-        print("*********************************************************")
+            action_attack(last_id)
+        sleep(3,6)
+        is_purchase, remain, end_at = get_tapbot_config() 
+        if is_purchase and remain >0:
+            if end_at <= datetime.now():
+                tapbot_claim()
+                sleep(3,6)
+                get_tapbot_config()
+                sleep(3,8)
+            if end_at == "":
+                tapbot_activate()                
+        print_message("*********************************************************")
 
         
     except Exception as e:        
@@ -136,8 +203,13 @@ def main(delay_time):
         df=pd.read_excel("account.xlsx",dtype={"url":str},sheet_name='memefi')
         df=df[(~df['token'].isna()) & (df['token']!='')]
         df.reset_index(inplace=True)
+        if "list_upgrade" not in df.columns:
+            df["list_upgrade"] = ""
+        if "proxy" not in df.columns:
+            df["proxy"] = ""
+        df['proxy']=df['proxy'].fillna('')
         for idx,row in df.iterrows():
-            exec(row['token'])
+            exec(row['token'],proxy_url=row['proxy'])
             time.sleep(10)
             
         time.sleep(delay_time)

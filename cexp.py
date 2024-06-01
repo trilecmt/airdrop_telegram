@@ -124,6 +124,7 @@ def main(delay_time):
     try:
         df=pd.read_excel("account.xlsx",dtype={"url":str},sheet_name='cexp')
         df=df[(~df['url'].isna()) & (df['url']!='')]
+        df["proxy"] = df["proxy"].fillna(value="")
         df.reset_index(inplace=True)
         for idx,row in df.iterrows():
             exec(row['url'],row['proxy'])
