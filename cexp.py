@@ -1,7 +1,5 @@
 import pandas as pd
-import json
 import urllib.parse
-import json
 import time
 import re
 from datetime import datetime,timedelta
@@ -62,11 +60,11 @@ def exec(url,proxy_url):
                 print_message("Available Taps:", user_info["data"]["availableTaps"])
                 print_message("-> CLAIMING..")
 
-                claim_taps_result = session.exec_post(claim_taps_url, headers=headers, data=json.dumps({
+                claim_taps_result = session.exec_post(claim_taps_url, headers=headers, data={
                     "devAuthData": uid,
                     "authData": data,
                     "data": {"taps": user_info["data"]["availableTaps"]}
-                }))
+                })
                 if claim_taps_result["status"] != "ok":
                     raise ValueError("Error: Couldn't claim taps")
 
@@ -83,13 +81,11 @@ def exec(url,proxy_url):
             
             if "farmStartedAt" in user_info["data"] and datetime.utcnow()> (datetime.strptime(user_info["data"]["farmStartedAt"], format_string)+timedelta(hours=4)):
                 print_message("-> CLAIMING")
-                response = session.exec_post(claim_farm_url, headers=headers, data=json.dumps({
+                claim_farm_result = session.exec_post(claim_farm_url, headers=headers, data={
                     "devAuthData": uid,
                     "authData": data,
                     "data": {}
-                }))
-                claim_farm_result = response.json()
-
+                })
                 if "status" in claim_farm_result and claim_farm_result["status"] != "ok":
                     print_message("Error: Couldn't claim farm")
                     raise ValueError("Error: Couldn't claim farm")
@@ -104,13 +100,11 @@ def exec(url,proxy_url):
 
             if "farmReward" in user_info["data"] and user_info["data"]["farmReward"] == "0.00":
                 print_message("-> FARM: STARTING")
-                response = session.exec_post(start_farm_url, headers=headers, data=json.dumps({
+                start_farm_result = session.exec_post(start_farm_url, headers=headers, data={
                     "devAuthData": uid,
                     "authData": data,
                     "data": {}
-                }))
-                start_farm_result = response.json()
-
+                })
                 if "status" in start_farm_result and start_farm_result["status"] != "ok":
                     raise ValueError("Error: Couldn't start farm")
 
