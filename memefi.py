@@ -65,13 +65,13 @@ def exec(profile):
 
                 element_countines=driver_helper.find_elements(driver,value="//p[text()='Continue Playing']")
                 if element_countines is not None and len(element_countines)>0:
-                    helper.print_message('No element Continue Playing')
+                    print_message('No element Continue Playing')
                     driver_helper.click_element(driver,value="//p[text()='Continue Playing']")
                     sleep(2)
 
         def booster():
             xpath_booster="//p[text()='Boosters']"
-            helper.print_message('click Boosters')
+            print_message('click Boosters')
             driver_helper.click_element(driver,value=xpath_booster)
             time.sleep(1)
             driver_helper.wait_until_element_located(driver,timeout=20,value="//*[text()='Recharge']/following-sibling::span[@class='MuiTypography-root MuiTypography-bodyLittleBold css-18kcc4d' and contains(text(),'Boosts')]")
@@ -79,20 +79,20 @@ def exec(profile):
             element = WebDriverWait(driver,20).until(EC.presence_of_element_located((By.XPATH, "//*[text()='Recharge']/following-sibling::span[@class='MuiTypography-root MuiTypography-bodyLittleBold css-18kcc4d' and contains(text(),'Boosts')]")))
             time.sleep(1)
             if  not element.text.replace(" ","").startswith("0/"):
-                helper.print_message(f'Click Recharge {element.text}')
+                print_message(f'Click Recharge {element.text}')
                 element.click()
                 recharge_elements=driver_helper.wait_elements_appear(driver,timeout=10,min_count=2,value="//p[contains(@class, 'MuiTypography-root') and contains(@class, 'MuiTypography-body1') and contains(@class, 'css-ibzb0o') and text()='claim boost']")
                 if recharge_elements is not  None: 
                     try:
                         time.sleep(2)
-                        helper.print_message('Click Recharge')
+                        print_message('Click Recharge')
                         recharge_elements[1].click()
-                        helper.print_message("Recharge full mana.Continue click...")
+                        print_message("Recharge full mana.Continue click...")
                         return True
                     except Exception as e:
-                        helper.print_message(e)
+                        print_message(e)
             else:
-                helper.print_message("No Recharge")
+                print_message("No Recharge")
                 
             
             def claim_bot_offline():
@@ -101,50 +101,37 @@ def exec(profile):
                 time.sleep(3)
                 tap_bot_elements=driver_helper.wait_elements_appear(driver,timeout=5,value="//span[contains(text(), 'TAP BOT')] | //span[contains(text(), 'ACTIVATE TAP BOT')]")
                 if tap_bot_elements is not None:
-                    helper.print_message(f'Click Tab Bot')
+                    print_message(f'Click Tab Bot')
                     tap_bot_elements[0].click()
-                    helper.sleep(2,2)
+                    sleep(2,2)
                     element=driver_helper.wait_element_appear(driver,timeout=3,value=f"//p[text()='Claim coins']/parent::button")
                     if element  is not None:
                         
                             if driver_helper.web_element_is_clickable(element):
                                 try:
-                                    helper.print_message(f'Click Claim coins')
+                                    print_message(f'Click Claim coins')
                                     element.click()
-                                    helper.sleep(2,2) 
-                                    helper.print_message(f'Clicked Claim coins...')
+                                    sleep(2,2) 
+                                    print_message(f'Clicked Claim coins...')
                                 except Exception as e:
                                     pass
-                            # helper.print_message(e)  
+                            # print_message(e)  
                             
                     time.sleep(1.5)
                     element=driver_helper.wait_element_appear(driver,timeout=3,value=f"//p[text()='Activate Bot']/parent::button")
                     if element  is not None:
                         if driver_helper.web_element_is_clickable(element):
                             try:
-                                helper.print_message(f'Click Activate Bot')
+                                print_message(f'Click Activate Bot')
                                 element.click()
-                                helper.sleep(2,2) 
-                                helper.print_message(f'Clicked Activate Bot...')
+                                sleep(2,2) 
+                                print_message(f'Clicked Activate Bot...')
                             except Exception as e:
-                                # helper.print_message(e)  
+                                # print_message(e)  
                                 pass
                             
                     time.sleep(1.5)
-                    # for key in ['Claim coins','Activate Bot']:
-                    #     element=driver_helper.wait_elements_appear(driver,timeout=3,value=f"//p[text()='Claim coins']/parent::button")
-                    #     if element  is not None:
-                    #         try:
-                    #             helper.print_message(f'Click {key}')
-                    #             element.click()
-                    #             helper.sleep(2,2) 
-                    #             helper.print_message(f'Clicked {key}...')
-                    #         except Exception as e:
-                    #             helper.print_message(e)  
-                                
-                    #     time.sleep(1.5)
-
-            
+ 
             
             def upgrade_dame():
                 if is_upgrade_dame!="1":
@@ -154,28 +141,28 @@ def exec(profile):
                     if element  is not None:
                         if driver_helper.web_element_is_clickable(element):
                             try:
-                                helper.print_message(f'Click Upgrade Dame')
+                                print_message(f'Click Upgrade Dame')
                                 element.click()
-                                helper.sleep(2,2) 
-                                helper.print_message(f'Clicked Upgrade Dame...')
-                                helper.sleep(2,2) 
+                                sleep(2,2) 
+                                print_message(f'Clicked Upgrade Dame...')
+                                sleep(2,2) 
                                 #click vao nut Dong y     
                                 element_upgrade=driver_helper.wait_element_appear(driver,timeout=3,value=f"//*[text()='upgrade']/parent::button")
                                 if driver_helper.web_element_is_clickable(element_upgrade):
-                                    helper.print_message(f'Click Upgrade Dame Confirm')
-                                    helper.sleep(2,2) 
+                                    print_message(f'Click Upgrade Dame Confirm')
+                                    sleep(2,2) 
                                     from selenium.webdriver.common.action_chains import ActionChains    
                                     actionChains = ActionChains(driver)
                                     actionChains.double_click(element_upgrade).perform()
                                     # element_upgrade.double_click()
-                                    helper.print_message(f'Clicked Upgrade Dame Confirm...')
-                                    helper.sleep(2,2) 
+                                    print_message(f'Clicked Upgrade Dame Confirm...')
+                                    sleep(2,2) 
 
                             except Exception as e:
-                                # helper.print_message(e)  
+                                # print_message(e)  
                                 pass
                 except Exception as e:
-                    helper.print_message(e)
+                    print_message(e)
 
             upgrade_dame()
             time.sleep(3)
