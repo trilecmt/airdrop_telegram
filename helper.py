@@ -90,3 +90,11 @@ def post_api(url_get_info, headers, payload):
         print(f"Response text: {response_info.text}")
         raise ValueError("Error: Couldn't fetch user data")
     return json.loads(response_info.text)
+
+def session_post_api(session:requests.Session,url, headers, payload):
+    response_info  = session.post(url, headers=headers, json= payload)
+    if response_info.status_code != 200:
+        print(f"StatusCode: {response_info.status_code}")
+        print(f"Response text: {response_info.text}")
+        raise ValueError("Error: Couldn't fetch user data")
+    return json.loads(response_info.text)
