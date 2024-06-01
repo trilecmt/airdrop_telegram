@@ -1,5 +1,6 @@
 import requests
 import helper
+from helper.utils import print_message
 from login_drivers.login_driver_base import ChormeDriverConfig, LoginDriverBase
 
 class GenLoginDriver(LoginDriverBase):
@@ -20,7 +21,7 @@ class GenLoginDriver(LoginDriverBase):
             response = requests.put(url)
             response.raise_for_status()
             data= response.json()
-            helper.print_message(data)
+            print_message(data)
             return data
         
         except requests.exceptions.RequestException as err:
@@ -47,7 +48,7 @@ class GenLoginDriver(LoginDriverBase):
     def start_profile(self,profile_name:str):
         profile_id=self.get_profile_id(profile_name)
         if profile_id is None:
-            helper.print_message(f"profile {profile_name} is not found.")
+            print_message(f"profile {profile_name} is not found.")
             return
         url = f'{self.api_url}/{profile_id}/start'
 

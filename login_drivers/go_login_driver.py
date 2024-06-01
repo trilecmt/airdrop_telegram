@@ -19,6 +19,8 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from gologin import GoLogin
 import constraint
+import helper
+from helper.utils import print_message
 
 
 class GoLoginDriver:
@@ -27,13 +29,13 @@ class GoLoginDriver:
     
     def list_profiles(self)->list:
         url=f'{self.api_url}/api/v3/profiles'
-        response=helper.request_api(url)
+        response=helper.helper_request.request_api(url)
         return [{"id":item["id"],"name":item["name"]} for item in response['data']]
 
     def close_profile(self,profile_name:str):
         url=f'{self.api_url}/api/v3/profiles/close/{self.get_profile_id(profile_name)}'
-        response=helper.request_api(url)
-        helper.print_message(response)
+        response=helper.helper_request.request_api(url)
+        print_message(response)
         return {"success":response['success']}
 
 
@@ -62,8 +64,8 @@ class GoLoginDriver:
     
     def close(self):
         self.driver.quit()
-        helper.print_message('Driver quitted')
+        print_message('Driver quitted')
         time.sleep(5)
         self.gl.stop()   
-        helper.print_message('Stopped Profile')
+        print_message('Stopped Profile')
         time.sleep(5)
