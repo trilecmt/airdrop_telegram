@@ -1,37 +1,39 @@
 import time
 import pandas as pd
-import requests
 from pprint import pprint
 import json
 import helper
 import pandas as pd
 import random
+
 from helper.helper_session import MySession
-from helper.utils import print_message
+from helper.utils import print_message, sleep
 
 MINIMUM_BALANCE = 1000000
 MAXIMUM_BUGET = 3000000
-MINIMUM_RIO = -90
+MINIMUM_RIO = -95
 TIME_BUY_UPGRADE = 10
 
+url_get_info = "https://api.hamsterkombat.io/clicker/sync"    
 url_boost = "https://api.hamsterkombat.io/clicker/boosts-for-buy"
-url_get_info = "https://api.hamsterkombat.io/clicker/sync"        
-url_upgrade_for_buy = "https://api.hamsterkombat.io/clicker/upgrades-for-buy"
 url_tap = "https://api.hamsterkombat.io/clicker/tap"
+url_buy_boost = "https://api.hamsterkombat.io/clicker/buy-boost"
+url_ugrade_for_buy = "https://api.hamsterkombat.io/clicker/upgrades-for-buy"
+url_buy_upgrade = "https://api.hamsterkombat.io/clicker/buy-upgrade"
 
 """
     RIO = (Profit After Upgraded - Price to Upgraded) * 100 / Price to Upgrade
 """
 
 
-def exec(token, list_names: str,proxy_url:str=None):
+def exec(token, list_names: str,proxy_url:str,limit_buy_card:int):
     session=MySession()
     session.set_proxy(proxy_url)
-
+    
     list_names = [_.strip() for _ in list_names.split(",") if _ != ""]
     balance = 0
     time_upgraded = 1
-    
+     
     def get_header(content_length):
         headers = {
             "Accept-Encoding": "gzip, deflate, br, zstd",
@@ -54,19 +56,19 @@ def exec(token, list_names: str,proxy_url:str=None):
         headers["Content-Length"] =content_length
         return headers
         
-    def get_remain_available_tap():
-        
+    def get_user_data():
         response_info  = session.exec_post(url_get_info, headers=get_header(content_length="0"), data={})
-        print_message(f"-User Id: {response_info['clickerUser']['id']}")
-        print_message(f"-Current Level: {response_info['clickerUser']['level']}")
         available_tap = response_info['clickerUser']['availableTaps']
-        print_message(f"-Available Tap Sync: {available_tap}")
-        print_message(f"-Earn per Tap: {response_info['clickerUser']['earnPerTap']}")
-        return available_tap
+        print_message(f"User Id: {response_info['clickerUser']['id']}")
+        print_message(f"Current Level: {response_info['clickerUser']['level']}")
+        print_message(f"Available Tap Sync: {available_tap}")
+        print_message(f"Earn per Tap: {response_info['clickerUser']['earnPerTap']}")
+        return response_info
     
     def click(available_tap):
         global balance
-        print_message("=================")  
+        print_message("=================")
+        
         response_data = session.exec_post(url_tap, headers=get_header(content_length="53"), data={
             "count": random.randint(1, 30),
             "availableTaps": available_tap,
@@ -75,9 +77,10 @@ def exec(token, list_names: str,proxy_url:str=None):
         avai_tap = response_data['clickerUser']['availableTaps']
         balance = round(response_data['clickerUser']['balanceCoins'],0)     
         earn_per_tap = response_data['clickerUser']["earnPerTap"]   
-        click_count = round(available_tap/earn_per_tap)+1   
-        print_message(f"-> Available Tap: {avai_tap}")
-        print_message(f"-> Current Coin: {helper.utils.format_number(balance)}")
+        click_count = round(available_tap/earn_per_tap)+1
+        
+        print_message(f"Available Tap: {avai_tap}")
+        print_message(f"Current Coin: {helper.utils.format_number(balance)}")
         return avai_tap
     
     def get_boost():
@@ -89,12 +92,11 @@ def exec(token, list_names: str,proxy_url:str=None):
                 remain_boost = element["maxLevel"] - element["level"] -1
                 cooldown = element["cooldownSeconds"]
         if cooldown == 0 and remain_boost>0:
-            url = "https://api.hamsterkombat.io/clicker/buy-boost"
-            payload = {
+            
+            response_info  = session.exec_post(url_buy_boost, headers=get_header(content_length="59"), data={
                 "boostId": "BoostFullAvailableTaps",
                 "timestamp": int(time.time())
-            }
-            response_info  = session.exec_post(url, headers=get_header(content_length="59"), data=payload)
+            })
             available_tap = response_info['clickerUser']['availableTaps']
             print_message(f"Available Tap After Boost: {available_tap}")
             return available_tap
@@ -114,7 +116,7 @@ def exec(token, list_names: str,proxy_url:str=None):
     
     def get_list_upgrade():
         print_message("===Getting List Upgrade===")
-        response_info  = session.exec_post(url_upgrade_for_buy, headers=get_header(content_length="0"), data={})
+        response_info  = session.exec_post(url_ugrade_for_buy, headers=get_header(content_length="0"), data={})
         list_upgrade = response_info["upgradesForBuy"]
         return list_upgrade
     
@@ -141,37 +143,60 @@ def exec(token, list_names: str,proxy_url:str=None):
         profit_increase = helper.utils.format_number(itemupgrade["profitPerHourDelta"])
         roi = round(itemupgrade["roi"],2)
         print_message(f"Buying {name} for {price}, ROI: {roi}, Profit Increased: {profit_increase}. Profit After Ugraded: {profit}")
-        url_buy_upgrade = "https://api.hamsterkombat.io/clicker/buy-upgrade"
-        payload = {
+        
+        response_info  = session.exec_post(url_buy_upgrade, headers=get_header(content_length="54"), data={
             "upgradeId": id,
             "timestamp": int(time.time())
-        }
-        response_info  = helper.post_api(url_buy_upgrade, headers=get_header(content_length="54"), payload=payload)
+        })
         balance= helper.utils.format_number(round(response_info["clickerUser"]["balanceCoins"],0))
         passive_earn = helper.utils.format_number(response_info["clickerUser"]["earnPassivePerHour"])
         
         print_message(f"Current Balance: {balance}, Current Passive Earn Per Hour : {passive_earn}")
         time_upgraded +=1
         return response_info["upgradesForBuy"]
-            
+        
+    
     try:
         print_message("*********************************************************")        
-        available_tap =  get_remain_available_tap()        
+        user_data =  get_user_data()     
+        available_tap=user_data['clickerUser']['availableTaps']
         looping_click(available_tap)
         time.sleep(5)
         available_tap = get_boost()
         if available_tap != 0:
             looping_click(available_tap)
-        list_upgrade = get_list_upgrade()
-        while time_upgraded <= TIME_BUY_UPGRADE:
-            list_upgrade = buy_upgrade(list_upgrade,list_names)
-            time.sleep(5)        
         
-        print("*********************************************************") 
+        for i in range(10):
+            list_upgrade_cards = get_list_upgrade()
+            for card in list_upgrade_cards:
+                if card['isAvailable'] and not card['isExpired'] and card.get('totalCooldownSeconds',0)==0:
+                    card['ROI']=card['profitPerHourDelta']/card['price']
+                else:
+                    card['ROI']=None
+            list_upgrade_cards=[item for item in list_upgrade_cards if item['ROI'] is not None and item['price']<=limit_buy_card]
+            list_upgrade_cards=sorted(list_upgrade_cards, key=lambda x: x['ROI'],reverse=True)
+            if len(list_upgrade_cards)==0:
+                break
+            picked_upgrade_card=list_upgrade_cards[0]
+            user_data =  get_user_data()   
+            current_balance=user_data['clickerUser']['totalCoins']
+            print_message(f"Current Balance:{current_balance}")
+            if current_balance>picked_upgrade_card['price']:       
+                response_info  = session.exec_post(url_buy_upgrade, headers=get_header(content_length="54"), data={
+                    "upgradeId": picked_upgrade_card['id'],
+                    "timestamp": int(time.time())
+                })
+                print_message(f"Bought {picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}")
+                sleep(2)
+            else:
+                print_message(f"Not enough coin for buy {picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}")
+                break
+          
+        print_message("*********************************************************")
+ 
     except Exception as e:
         import traceback
         print_message(traceback.format_exc())
-        pass
 
 
 def main(delay_time):
@@ -184,8 +209,9 @@ def main(delay_time):
         if "proxy" not in df.columns:
             df["proxy"] = ""
         df['proxy']=df['proxy'].fillna('')
+
         for idx,row in df.iterrows():
-            exec(row['token'], row['list_upgrade'],proxy_url=row['proxy'])
+            exec(row['token'], row['list_upgrade'],proxy_url=row['proxy'],limit_buy_card=row['limit_buy_card'])
             time.sleep(10)
             
         time.sleep(delay_time)
