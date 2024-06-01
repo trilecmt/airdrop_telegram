@@ -9,7 +9,7 @@ import random
 
 MINIMUM_BALANCE = 1000000
 MAXIMUM_BUGET = 3000000
-MINIMUM_RIO = -90
+MINIMUM_RIO = -95
 TIME_BUY_UPGRADE = 10
 """
     RIO = (Profit After Upgraded - Price to Upgraded) * 100 / Price to Upgrade

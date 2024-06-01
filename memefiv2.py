@@ -74,7 +74,7 @@ def exec(token):
     
     def attack(last_id: str):
         nonlocal time_att        
-        count_tap = random.randint(5, 20)
+        count_tap = random.randint(5, 40)
         if count_tap * att_dmg > current_energy:
             count_tap = round(current_energy/att_dmg)-1
         payload = {
@@ -96,7 +96,7 @@ def exec(token):
     def action_attack(last_id):
         while current_energy> att_dmg *10:
             last_id = attack(last_id)            
-            time.sleep(6)
+            time.sleep(4)
     
     def get_recharge_boost():
         nonlocal time_att  
