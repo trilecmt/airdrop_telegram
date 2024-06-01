@@ -122,9 +122,10 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int):
         
         for i in range(50):
             user_data =  get_user_data()   
-            current_balance=user_data['clickerUser']['balanceCoins']
+            current_balance= round(user_data['clickerUser']['balanceCoins'],0)
             if current_balance<limit_buy_card:
                 print_message(f"Current balance {current_balance} reach LIMIT_BUY_CARD {limit_buy_card}")
+                break
             list_upgrade_cards = get_list_upgrade()
             for card in list_upgrade_cards:
                 if card['isAvailable'] and not card['isExpired'] and card.get('totalCooldownSeconds',0)==0:
