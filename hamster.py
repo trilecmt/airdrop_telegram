@@ -5,14 +5,8 @@ import json
 import helper
 import pandas as pd
 import random
-
 from helper.helper_session import MySession
 from helper.utils import print_message, sleep
-
-MINIMUM_BALANCE = 1000000
-MAXIMUM_BUGET = 3000000
-MINIMUM_RIO = -95
-TIME_BUY_UPGRADE = 10
 
 url_get_info = "https://api.hamsterkombat.io/clicker/sync"    
 url_boost = "https://api.hamsterkombat.io/clicker/boosts-for-buy"
@@ -20,10 +14,6 @@ url_tap = "https://api.hamsterkombat.io/clicker/tap"
 url_buy_boost = "https://api.hamsterkombat.io/clicker/buy-boost"
 url_ugrade_for_buy = "https://api.hamsterkombat.io/clicker/upgrades-for-buy"
 url_buy_upgrade = "https://api.hamsterkombat.io/clicker/buy-upgrade"
-
-"""
-    RIO = (Profit After Upgraded - Price to Upgraded) * 100 / Price to Upgrade
-"""
 
 
 def exec(token, list_names: str,proxy_url:str,limit_buy_card:int):
@@ -119,42 +109,6 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int):
         response_info  = session.exec_post(url_ugrade_for_buy, headers=get_header(content_length="0"), data={})
         list_upgrade = response_info["upgradesForBuy"]
         return list_upgrade
-    
-    def buy_upgrade(list_upgrade, list_names):
-        nonlocal  time_upgraded 
-        print_message(f"===Buying Upgrade for {time_upgraded} time===")
-        list_upgrade = pd.DataFrame(list_upgrade)
-        list_upgrade["roi"] = (list_upgrade["profitPerHour"] -list_upgrade["price"] ) *100 / list_upgrade["price"] 
-        list_upgrade = list_upgrade[(list_upgrade["price"]<MAXIMUM_BUGET)& (list_upgrade["roi"]> MINIMUM_RIO)  & (list_upgrade["profitPerHourDelta"]!= 0) & (list_upgrade["isExpired"]==False) & (list_upgrade["isAvailable"]==True) & ((list_upgrade["cooldownSeconds"].isna()) | (list_upgrade["cooldownSeconds"]==0))].reset_index(drop=True)
-        list_upgrade = list_upgrade[['id','name','price','profitPerHour','profitPerHourDelta','roi']]
-        if len(list_names) > 0:
-            list_upgrade = list_upgrade[list_upgrade["name"].isin(list_names)]
-        list_upgrade.sort_values(["roi"],ascending=False,ignore_index=True,inplace=True)
-        if list_upgrade.empty:
-            print_message("===No more upgrades available===")
-            time_upgraded =11
-            return
-        list_upgrade = list_upgrade.to_dict("records")
-        itemupgrade = list_upgrade[0]
-        name = itemupgrade["name"]
-        id = itemupgrade["id"]
-        price = helper.utils.format_number(itemupgrade["price"])
-        profit = helper.utils.format_number(itemupgrade["profitPerHour"])
-        profit_increase = helper.utils.format_number(itemupgrade["profitPerHourDelta"])
-        roi = round(itemupgrade["roi"],2)
-        print_message(f"Buying {name} for {price}, ROI: {roi}, Profit Increased: {profit_increase}. Profit After Ugraded: {profit}")
-        
-        response_info  = session.exec_post(url_buy_upgrade, headers=get_header(content_length="54"), data={
-            "upgradeId": id,
-            "timestamp": int(time.time())
-        })
-        balance= helper.utils.format_number(round(response_info["clickerUser"]["balanceCoins"],0))
-        passive_earn = helper.utils.format_number(response_info["clickerUser"]["earnPassivePerHour"])
-        
-        print_message(f"Current Balance: {balance}, Current Passive Earn Per Hour : {passive_earn}")
-        time_upgraded +=1
-        return response_info["upgradesForBuy"]
-        
     
     try:
         print_message("*********************************************************")        
