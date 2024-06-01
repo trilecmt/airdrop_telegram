@@ -121,19 +121,22 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int):
             looping_click(available_tap)
         
         for i in range(10):
+            user_data =  get_user_data()   
+            current_balance=user_data['clickerUser']['totalCoins']
+            if current_balance<limit_buy_card:
+                print_message(f"Current balance {current_balance} reach LIMIT_BUY_CARD {limit_buy_card}")
             list_upgrade_cards = get_list_upgrade()
             for card in list_upgrade_cards:
                 if card['isAvailable'] and not card['isExpired'] and card.get('totalCooldownSeconds',0)==0:
                     card['ROI']=card['profitPerHourDelta']/card['price']
                 else:
                     card['ROI']=None
-            list_upgrade_cards=[item for item in list_upgrade_cards if item['ROI'] is not None and item['price']<=limit_buy_card]
+            list_upgrade_cards=[item for item in list_upgrade_cards if item['ROI'] is not None]
             list_upgrade_cards=sorted(list_upgrade_cards, key=lambda x: x['ROI'],reverse=True)
             if len(list_upgrade_cards)==0:
                 break
             picked_upgrade_card=list_upgrade_cards[0]
-            user_data =  get_user_data()   
-            current_balance=user_data['clickerUser']['totalCoins']
+            
             print_message(f"Current Balance:{current_balance}")
             if current_balance>picked_upgrade_card['price']:       
                 response_info  = session.exec_post(url_buy_upgrade, headers=get_header(content_length="54"), data={
