@@ -120,7 +120,7 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int):
         if available_tap != 0:
             looping_click(available_tap)
         
-        for i in range(10):
+        for i in range(50):
             user_data =  get_user_data()   
             current_balance=user_data['clickerUser']['balanceCoins']
             if current_balance<limit_buy_card:
