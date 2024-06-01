@@ -122,13 +122,13 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int):
         
         for i in range(10):
             user_data =  get_user_data()   
-            current_balance=user_data['clickerUser']['totalCoins']
+            current_balance=user_data['clickerUser']['balanceCoins']
             if current_balance<limit_buy_card:
                 print_message(f"Current balance {current_balance} reach LIMIT_BUY_CARD {limit_buy_card}")
             list_upgrade_cards = get_list_upgrade()
             for card in list_upgrade_cards:
                 if card['isAvailable'] and not card['isExpired'] and card.get('totalCooldownSeconds',0)==0:
-                    card['ROI']=card['profitPerHourDelta']/card['price']
+                    card['ROI']=round(100*card['profitPerHourDelta']/card['price'],2)
                 else:
                     card['ROI']=None
             list_upgrade_cards=[item for item in list_upgrade_cards if item['ROI'] is not None]
