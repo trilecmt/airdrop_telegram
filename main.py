@@ -1,5 +1,5 @@
-import hamsterv2
-import cexpv2
+import hamster
+import cexp
 import time
 
 
@@ -9,10 +9,10 @@ def main():
 if __name__=="__main__":
     while True:
         print("*****PROCESS HAMSTER****")
-        hamsterv2.main(delay_time=10)
+        hamster.main(delay_time=10)
         
         print("*****PROCESS CEXP****")
-        cexpv2.main(delay_time=10)
+        cexp.main(delay_time=10)
         
         print("*****SLEEP***")
         time.sleep(10*60)

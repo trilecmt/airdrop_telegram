@@ -1,7 +1,7 @@
-const ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjQzMTkwNSwidGltZXN0YW1wIjoxNzE2NjE5NzI4ODIyLCJ0eXBlIjoxLCJpYXQiOjE3MTY2MTk3MjgsImV4cCI6MTcxNzIyNDUyOH0.xBS8dH51VdbYII6xK6sQGhiia9JuYea6yYEZ09NASxU"
+const ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjQzMTkwNSwidGltZXN0YW1wIjoxNzE3MTYyMjE0NTg4LCJ0eXBlIjoxLCJpYXQiOjE3MTcxNjIyMTQsImV4cCI6MTcxNzc2NzAxNH0.KuksJZpCrAYTY4WPyGjgj96k6quERfkmNvc-ONm8sU0";
 let listColect = [];
 let listDuck = [];
-// "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjQzNDAxNywidGltZXN0YW1wIjoxNzE2NjIyNjIxMzU4LCJ0eXBlIjoxLCJpYXQiOjE3MTY2MjI2MjEsImV4cCI6MTcxNzIyNzQyMX0.fbLXxYgtn53HEFQXO2sSmXHw5Wop7A2s4rtUVvHNShI"
+
 Array.prototype.random = function () {
   return this[Math.floor(Math.random() * this.length)];
 };

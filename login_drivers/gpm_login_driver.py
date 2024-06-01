@@ -1,6 +1,8 @@
 import requests
 import helper
+from helper.utils import print_message
 from login_drivers.login_driver_base import ChormeDriverConfig, LoginDriverBase
+import json
 
 class GPMLoginApiV3(LoginDriverBase):
     def __init__(self,api_url:str) -> None:
@@ -9,23 +11,23 @@ class GPMLoginApiV3(LoginDriverBase):
     
     def list_profiles(self)->list:
         url=f'{self.api_url}'
-        response=helper.request_api(url)
+        response=helper.helper_request.request_api(url)
         return [{"id":item["id"],"name":item["name"]} for item in response['data']]
 
     def delete_profile(self,profile_name:str):
         url=f'{self.api_url}/delete/{self.get_profile_id(profile_name)}?mode=2'
-        response=helper.request_api(url)
-        helper.print_message(response)
+        response=helper.helper_request.request_api(url)
+        print_message(response)
         return {"success":response['success']}
     
     def close_profile(self,profile_name:str):
         url=f'{self.api_url}/close/{self.get_profile_id(profile_name)}'
-        response=helper.request_api(url)
-        helper.print_message(response)
+        response=helper.helper_request.request_api(url)
+        print_message(response)
         return {"success":response['success']}
 
     def create_profile(self,profile_name:str):
-        import json
+        
         url=f'{self.api_url}/create'
         try:
             response = requests.post(url,data=json.dumps(
@@ -54,15 +56,15 @@ class GPMLoginApiV3(LoginDriverBase):
                 })
             )
             response.raise_for_status()  # Raise HTTPError for bad status codes
-            helper.print_message(response.json())
+            print_message(response.json())
             self.profiles=self.list_profiles()
             return response.json()
         except requests.exceptions.RequestException as e:
-            helper.print_message("Error:", e)
+            print_message("Error:", e)
         
     
-        response=helper.request_api(url)
-        helper.print_message(response)
+        response=helper.helper_request.request_api(url)
+        print_message(response)
         return {"success":response['success']}
 
     def get_profile_id(self,profile_name:str)->str:
@@ -78,8 +80,8 @@ class GPMLoginApiV3(LoginDriverBase):
             self.profiles=self.list_profiles()
             return self.start_profile(profile_name) 
         url=f'{self.api_url}/start/{profile_id}'
-        data=helper.request_api(url)
-        helper.print_message(data)
+        data=helper.helper_request.request_api(url)
+        print_message(data)
         if data['success']:
             return {
                 "success": data['success'],

@@ -15,13 +15,15 @@ from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
+from helper.utils import print_message
+
 def perform_actions(driver, keys):
     for i in range(0, len(keys)):
         actions = ActionChains(driver)
         actions.send_keys(keys[i])
         time.sleep(.3) #  adjust this if its going to fast\slow
         actions.perform()
-    helper.print_message("Actions performed!")
+    print_message("Actions performed!")
 
 def delete_cache(driver,is_close=True):
     driver.execute_script("window.open('')")  # Create a separate tab than the main one
@@ -43,7 +45,7 @@ def click_element(driver,value:str,index=0,by=By.XPATH):
         element = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((by, value)))
         element.click()
     except Exception as e:
-        helper.print_message(e)
+        print_message(e)
         pass
           
 
@@ -69,7 +71,7 @@ def wait_until_element_located(driver:webdriver.Chrome,value:str,timeout:int):
         element = WebDriverWait(driver,timeout).until(EC.presence_of_element_located((By.XPATH, "//*[text()='Recharge']/following-sibling::span[@class='MuiTypography-root MuiTypography-bodyLittleBold css-18kcc4d' and contains(text(),'Boosts')]")))
         return element
     except Exception as e:
-        helper.print_message(e)
+        print_message(e)
 
 def wait_until_elements_located(driver:webdriver.Chrome,value:str,timeout:int):
     pass

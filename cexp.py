@@ -1,139 +1,147 @@
-from selenium import webdriver
-import time
 import pandas as pd
-import driver_helper
-import helper
-import constraint
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium import webdriver
-from selenium.webdriver.common.by import By
+import json
+import urllib.parse
+import json
 import time
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import re
+from datetime import datetime,timedelta
+import traceback
+import helper
+from helper.helper_session import MySession
+from helper.utils import print_message
 
-DEFAULT_WINDOW_SIZE=constraint.DEFAULT_WINDOW_SIZE
-PROFILE_NAME='CEXP'
+user_info_url = "https://cexp.cex.io/api/getUserInfo"
+claim_taps_url = "https://cexp.cex.io/api/claimTaps"
+claim_farm_url = "https://cexp.cex.io/api/claimFarm"
+start_farm_url = "https://cexp.cex.io/api/startFarm"
+format_string = "%Y-%m-%dT%H:%M:%S.%fZ"
 
-def exec():
-    driver_login,driver=helper.start_profile(driver_name='GPM_LOGIN',profile_name=PROFILE_NAME,window_size=DEFAULT_WINDOW_SIZE) 
-    df=pd.read_excel("account.xlsx",dtype={"url":str},sheet_name='cexp')
-    df=df[(~df['url'].isna()) & (df['url']!='')]
-    df.reset_index(inplace=True)
-    for idx,row in df.iterrows():
-        url=row['url']
-        if url is None:
-            continue
-        helper.print_message(f'{idx+1}/{len(df)}.Processing')
+  
+def exec(url,proxy_url):
+    if url is None:
+        return
+    print_message(50*"*")
+    # Assuming 'data' is defined somewhere in your Python environment
+    match = re.search(r'id%2522%253A(\d+)', url)
+    if not match:
+        print_message("Pattern not found")
+        return 
+    uid = match.group(1)
+    print_message(f"Process {uid}")
+    parsed_url = urllib.parse.urlparse(url)
+    query_string = parsed_url.fragment
+    query_params = urllib.parse.parse_qs(query_string)
+    data = query_params['tgWebAppData'][0]
+    # Define headers
+    headers = {
+        "content-type": "application/json"
+    }
+    payload = {
+        "devAuthData": uid,
+        "authData": data,
+        "platform": "android",
+        "data": {}
+    }
 
-        def click_hero(time_click):
-            helper.print_message(f'[{row['profile']}] Attacking hero')
-         
-            for i in range(time_click):
-                helper.print_message(f'{i}/{time_click}')
-                
-                element=driver_helper.find_element(driver,value="//*[@class='Text_text__g5dgG Text_primary__9SniH Text_textL__4XTbr Text_semiBold__iPCTR Text_center__cmN+H']")
-                if  element is not None and element.text=='0 taps left':
-                    helper.print_message('0 taps left')
-                    helper.sleep(1,1)
-                    continue
-                helper.sleep(2,2)        
-                element=driver_helper.find_element(driver,value="//*[@class='Tap_tapCoin__IQw2b']")
-                action = webdriver.common.action_chains.ActionChains(driver)
-                action.w3c_actions.pointer_action._duration = helper.get_random(1,3)
-                for j in range(100):
-                    try:
-                        action.move_to_element_with_offset(element,helper.get_random(-15,0),helper.get_random(-15,0))# helper.get_random(-20,-40), helper.get_random(-20,-40))
-                        action.double_click()
-                        action.perform()
-                    except Exception as e:
-                        pass
-                time.sleep(helper.get_random(1,2))
-                #check level up
-
-        def claim():
-            helper.print_message('Claim...')
-            element=driver_helper.wait_element_appear(driver,value="//span[text()='Claim']/parent::button",timeout=10)
-            if element is not None and driver_helper.web_element_is_clickable(element):
-                helper.sleep(1,2)
-                element.click()
-                helper.print_message('Claim success')
-                time.sleep(2)   
-
-        def close_more_if_exist():
-            element=driver_helper.wait_element_appear(driver,value="//*[text()='Morrre!']",timeout=10)
-            if element is not None and driver_helper.web_element_is_clickable(element):
-                helper.sleep(1,2)
-                element.click()
-                helper.print_message('Close more')
-                time.sleep(2)   
-
-        def input_email(email):
-            helper.print_message('Check Email input')
-            element=driver_helper.wait_element_appear(driver,value="//*[@id='email']",timeout=5)
-            if element is None:
+    try:
+        with MySession() as session:
+            session.set_proxy(proxy_url=proxy_url)
+            user_info = session.exec_post(user_info_url,headers=headers,data=payload)
+            if user_info is None:
                 return
-            element.send_keys(email)
-            helper.sleep(3,3)
-            element=driver_helper.wait_element_appear(driver,value="//*[text()='Continue']",timeout=5)
-            if element is None:
-                return
-            helper.sleep(2,3)
-            element.click()
-            helper.sleep(2,3)
-        
-        def farm():
-            time.sleep(2)
-            element=driver_helper.wait_element_appear(driver,value="//*[text()='Farm']",timeout=10)
-            if element is not None and driver_helper.web_element_is_clickable(element):
-                helper.sleep(1,2)
-                element.click()
-                helper.print_message("Click Tab Farm")
-                time.sleep(2)   
-                helper.print_message('Check Start farming era')
-                element=driver_helper.wait_element_appear(driver,value="//*[text()='Start farming era']",timeout=10)
-                if element is not None and driver_helper.web_element_is_clickable(element):
-                    helper.sleep(1,2)
-                    element.click()
-                    helper.print_message("Click Start farming era")
-                    time.sleep(2)   
-                else:
-                    helper.sleep(1,2)
-                    claim()
-                    helper.sleep(1,2)
-                    close_more_if_exist()
-                    helper.print_message('Check Start farming era')
-                    element=driver_helper.wait_element_appear(driver,value="//*[text()='Start farming era']",timeout=10)
-                    if element is not None and driver_helper.web_element_is_clickable(element):
-                        helper.sleep(1,2)
-                        element.click()
-                        helper.print_message("Click Start farming era")
-                        time.sleep(2)   
+            
+            if user_info["status"] != "ok":
+                raise ValueError("Error: Couldn't fetch user data")
+            if "userTelegramId" in user_info["data"]:
+                print_message("Id:", user_info["data"]["userTelegramId"])
+            if "username" in user_info["data"]:
+                print_message("Username:", user_info["data"]["username"])
+            if "balance" in user_info["data"]:
+                print_message("Balance:", user_info["data"]["balance"])
+            if "availableTaps" in user_info["data"] and int(user_info["data"]["availableTaps"]) > 0:
+                print_message("Available Taps:", user_info["data"]["availableTaps"])
+                print_message("-> CLAIMING..")
+
+                claim_taps_result = session.exec_post(claim_taps_url, headers=headers, data=json.dumps({
+                    "devAuthData": uid,
+                    "authData": data,
+                    "data": {"taps": user_info["data"]["availableTaps"]}
+                }))
+                if claim_taps_result["status"] != "ok":
+                    raise ValueError("Error: Couldn't claim taps")
+
+                print_message("-> CLAIM SUCCESS!")
+                print_message("BALANCE:", claim_taps_result["data"]["balance"])
+                user_info["data"]["currentTapWindowFinishIn"] = claim_taps_result["data"]["currentTapWindowFinishIn"]
+
             else:
-                helper.print_message("Không có claim")
+                print_message("-> NO TAPS")
 
-        try:
-            driver.get(url)
-            input_email(row['email'])
-            click_hero(time_click=10)
-            claim()
-            driver.refresh()
-            farm()
-        except Exception as e:
-            helper.print_message(e)
-        finally:
-            # try:       
-            #     driver_helper.delete_cache(driver,is_close=False)
-            # except Exception as e:
-            #     pass
-            helper.print_message('Done...')
-    helper.print_message(f"Close profile {PROFILE_NAME}")
-    driver_login.close_profile(PROFILE_NAME)
+            print_message("NEXT CLAIM:", str(int(user_info["data"]["currentTapWindowFinishIn"]) // 1000 // 3600) + "H" + str(int(user_info["data"]["currentTapWindowFinishIn"]) // 1000 % 60) + "M")
+            print_message("FARM REWARD:", user_info["data"]["farmReward"])
+            print_message("FARMING")
+            
+            if "farmStartedAt" in user_info["data"] and datetime.utcnow()> (datetime.strptime(user_info["data"]["farmStartedAt"], format_string)+timedelta(hours=4)):
+                print_message("-> CLAIMING")
+                response = session.exec_post(claim_farm_url, headers=headers, data=json.dumps({
+                    "devAuthData": uid,
+                    "authData": data,
+                    "data": {}
+                }))
+                claim_farm_result = response.json()
+
+                if "status" in claim_farm_result and claim_farm_result["status"] != "ok":
+                    print_message("Error: Couldn't claim farm")
+                    raise ValueError("Error: Couldn't claim farm")
+
+                claim_farm_result["data"]["farmReward"] = "0.00"
+                user_info["data"]["farmReward"]= "0.00"
+                print_message("-> CLAIM:", claim_farm_result["data"]["claimedBalance"])
+                print_message("-> BALANCE:", claim_farm_result["data"]["balance"])
+
+            elif "farmStartedAt" in user_info["data"]:
+                print_message(f'-> Claim After:  {int(((datetime.strptime(user_info["data"]["farmStartedAt"], format_string)+timedelta(hours=4))-datetime.utcnow()).total_seconds()/60)} minutes')
+
+            if "farmReward" in user_info["data"] and user_info["data"]["farmReward"] == "0.00":
+                print_message("-> FARM: STARTING")
+                response = session.exec_post(start_farm_url, headers=headers, data=json.dumps({
+                    "devAuthData": uid,
+                    "authData": data,
+                    "data": {}
+                }))
+                start_farm_result = response.json()
+
+                if "status" in start_farm_result and start_farm_result["status"] != "ok":
+                    raise ValueError("Error: Couldn't start farm")
+
+                print_message("-> FARMING")
+                print_message("->", start_farm_result["data"]["farmReward"])
+
+    except Exception as e:  
+        print_message(traceback.format_exc())
+        print_message("Status:ERROR!")
+
+    
+    print_message(50*"*")
+    print_message(50*"")
+
+
+def main(delay_time):
+    try:
+        df=pd.read_excel("account.xlsx",dtype={"url":str},sheet_name='cexp')
+        df=df[(~df['url'].isna()) & (df['url']!='')]
+        df.reset_index(inplace=True)
+        for idx,row in df.iterrows():
+            exec(row['url'],row['proxy'])
+            time.sleep(10)
+        
+        time.sleep(delay_time)
+    except Exception as e:
+        print(e)
 
 if __name__=='__main__':
     while True:
         try:
-            exec()
+            main(delay_time=60)                      
         except Exception as e:
-            helper.print_message(e)
+            print(e)
