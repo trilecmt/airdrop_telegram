@@ -14,9 +14,9 @@ url_tap = "https://api.hamsterkombat.io/clicker/tap"
 url_buy_boost = "https://api.hamsterkombat.io/clicker/buy-boost"
 url_ugrade_for_buy = "https://api.hamsterkombat.io/clicker/upgrades-for-buy"
 url_buy_upgrade = "https://api.hamsterkombat.io/clicker/buy-upgrade"
+url_claim_daily_combo="https://api.hamsterkombat.io/clicker/claim-daily-combo"
 
-
-def exec(token, list_names: str,proxy_url:str,limit_buy_card:int):
+def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_combo_cards:list):
     session=MySession()
     session.set_proxy(proxy_url)
     
@@ -60,7 +60,7 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int):
         print_message("=================")
         
         response_data = session.exec_post(url_tap, headers=get_header(content_length="53"), data={
-            "count": random.randint(1, 30),
+            "count": random.randint(10, 30),
             "availableTaps": available_tap,
             "timestamp": int(time.time())
         })        
@@ -81,8 +81,7 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int):
             if element["id"] == "BoostFullAvailableTaps":
                 remain_boost = element["maxLevel"] - element["level"] -1
                 cooldown = element["cooldownSeconds"]
-        if cooldown == 0 and remain_boost>0:
-            
+        if cooldown == 0 and remain_boost>0: 
             response_info  = session.exec_post(url_buy_boost, headers=get_header(content_length="59"), data={
                 "boostId": "BoostFullAvailableTaps",
                 "timestamp": int(time.time())
@@ -104,29 +103,60 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int):
             if remain_tap ==0:
                 break
     
+    def claim_daily_combo():
+        print_message("Claming daily combo...")
+        response_info  = session.exec_post(url_claim_daily_combo, headers=get_header(content_length="0"), data={})
+        if response_info is not None:
+            print_message("Claimed daily combo success.")
+        else:
+            print_message("Claimed daily combo failed.")
+
     def get_list_upgrade():
         print_message("===Getting List Upgrade===")
         response_info  = session.exec_post(url_ugrade_for_buy, headers=get_header(content_length="0"), data={})
-        list_upgrade = response_info["upgradesForBuy"]
-        return list_upgrade
+        return response_info["upgradesForBuy"],response_info["dailyCombo"]
     
     try:
         print_message("*********************************************************")        
         user_data =  get_user_data()     
         available_tap=user_data['clickerUser']['availableTaps']
-        looping_click(available_tap)
-        time.sleep(5)
-        available_tap = get_boost()
-        if available_tap != 0:
-            looping_click(available_tap)
+        # looping_click(available_tap)
+        # time.sleep(5)
+        # available_tap = get_boost()
+        # if available_tap != 0:
+        #     looping_click(available_tap)
         
-        for i in range(50):
+        for i in range(50):    
             user_data =  get_user_data()   
             current_balance= round(user_data['clickerUser']['balanceCoins'],0)
+            list_upgrade_cards,daily_combo = get_list_upgrade()
+            if daily_combo['isClaimed']==False:
+                daily_combo_cards=[card for card in list_upgrade_cards if card['name'].replace("...","") in input_daily_combo_cards and card['id'] not in daily_combo['upgradeIds']]
+                if len(daily_combo_cards)==0:
+                    claim_daily_combo()
+                else:
+                    try:
+                        for card in daily_combo_cards:
+                            print_message(f"Try buy card daily event:{card['name']}->> {card['price']}")
+                            if current_balance<card['price']:
+                                print_message(f"Not enough money {current_balance} / {card['price']}")
+                            else:      
+                                response_info  = session.exec_post(url_buy_upgrade, headers=get_header(content_length="54"), data={
+                                    "upgradeId": card['id'],
+                                    "timestamp": int(time.time())
+                                })
+                                if response_info is not None: 
+                                    print_message(f"Buy daily card:Buy success {picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}") 
+                                else:
+                                    print_message(f"Buy daily card:Buy failed{picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}") 
+                    except Exception as e:
+                        pass
+                    break
+
             if current_balance<limit_buy_card:
                 print_message(f"Current balance {current_balance} reach LIMIT_BUY_CARD {limit_buy_card}")
                 break
-            list_upgrade_cards = get_list_upgrade()
+           
             for card in list_upgrade_cards:
                 if card['isAvailable'] and not card['isExpired'] and card.get('totalCooldownSeconds',0)==0:
                     card['ROI']=round(100*card['profitPerHourDelta']/card['price'],2)
@@ -167,9 +197,9 @@ def main(delay_time):
         if "proxy" not in df.columns:
             df["proxy"] = ""
         df['proxy']=df['proxy'].fillna('')
-
+        daily_combo_cards=df['daily_specical_card'].iat[0].split(";")
         for idx,row in df.iterrows():
-            exec(row['token'], row['list_upgrade'],proxy_url=row['proxy'],limit_buy_card=row['limit_buy_card'])
+            exec(row['token'], row['list_upgrade'],proxy_url=row['proxy'],limit_buy_card=row['limit_buy_card'],input_daily_combo_cards=daily_combo_cards)
             time.sleep(10)
             
         time.sleep(delay_time)
