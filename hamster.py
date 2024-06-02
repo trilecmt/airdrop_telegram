@@ -120,11 +120,11 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
         print_message("*********************************************************")        
         user_data =  get_user_data()     
         available_tap=user_data['clickerUser']['availableTaps']
-        # looping_click(available_tap)
-        # time.sleep(5)
-        # available_tap = get_boost()
-        # if available_tap != 0:
-        #     looping_click(available_tap)
+        looping_click(available_tap)
+        time.sleep(5)
+        available_tap = get_boost()
+        if available_tap != 0:
+            looping_click(available_tap)
         
         for i in range(50):    
             user_data =  get_user_data()   
