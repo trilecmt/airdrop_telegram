@@ -33,7 +33,7 @@ class MySession(requests.Session):
     def exec_post(self,url, headers, data):
         try:
             response_info  = self.post(url, headers=headers, data=json.dumps(data))
-            if response_info.status_code != 200:
+            if response_info.status_code not in [200,201]:
                 print_message(f"StatusCode: {response_info.status_code}")
                 print_message(f"Response text: {response_info.text}")
                 print_message("Error: Couldn't fetch user data")

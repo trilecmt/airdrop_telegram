@@ -7,7 +7,7 @@ import helper
 import random
 import traceback
 from helper.helper_session import MySession
-from helper.utils import print_message, sleep
+from helper.utils import print_message, sleep, format_number
 from datetime import datetime, timedelta
 
 
@@ -18,21 +18,21 @@ def exec(token, proxy_url:str):
     header = {
         "Accept-Encoding": "gzip, deflate, br, zstd",
         "Accept-Language": "en-US,en;q=0.9",
-        "Connection": "keep-alive",
-        "Host": "api-gw-tg.memefi.club",
         "Origin": "https://tg-app.memefi.club",
-        "Referer": "https://tg-app.memefi.club",
+        "Referer": "https://tg-app.memefi.club/",
+        "Priority": "u=1, i",
         "Sec-Fetch-Dest": "empty",
         "Sec-Fetch-Mode": "cors",
         "Sec-Fetch-Site": "same-site",
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Authorization": f"Bearer {token}",
         "Content-Type": "application/json",
-        "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="24"',
         "Sec-Ch-Ua-Mobile": "?0",
         "Sec-Ch-Ua-Platform": '"Windows"',
     }    
     current_energy = 0 
+    max_energy = 0
     time_att = 1
     att_dmg = 0
     refill_amt = 3
@@ -55,6 +55,7 @@ def exec(token, proxy_url:str):
         nonlocal current_energy
         nonlocal att_dmg
         nonlocal refill_amt
+        nonlocal max_energy
         data = response_data["data"]
         key = next(iter(response_data["data"]))            
         current_energy = data[key]['currentEnergy']
@@ -62,7 +63,7 @@ def exec(token, proxy_url:str):
         current_coin = data[key]['coinsAmount']   
         att_dmg = data[key]['weaponLevel'] +1
         refill_amt = data[key]['freeBoosts']['currentRefillEnergyAmount'] 
-        print_message(f"Current Coin: {current_coin}, Energy: {current_energy}/{max_energy}. Recharge left: {refill_amt}") 
+        print_message(f"Current Coin: {format_number(current_coin)}, Energy: {current_energy}/{max_energy}. Recharge left: {refill_amt}") 
         return data[key]['nonce']
     
     def get_game_config()-> str:
@@ -180,16 +181,19 @@ def exec(token, proxy_url:str):
         while refill_amt>0:
             last_id = get_recharge_boost()
             action_attack(last_id)
+            if time_att >=50 and current_energy == max_energy:
+                print("===The is something wrong with the game===")
+                return 
         sleep(3,6)
         is_purchase, remain, end_at = get_tapbot_config() 
-        if is_purchase and remain >0:
-            if end_at <= datetime.now():
+        if is_purchase and remain >0:            
+            if end_at == "":
+                tapbot_activate()     
+            elif end_at <= datetime.now():
                 tapbot_claim()
                 sleep(3,6)
                 get_tapbot_config()
-                sleep(3,8)
-            if end_at == "":
-                tapbot_activate()                
+                sleep(3,8)           
         print_message("*********************************************************")
 
         
