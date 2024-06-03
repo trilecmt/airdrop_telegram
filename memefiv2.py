@@ -202,16 +202,16 @@ def exec(token, proxy_url:str):
     try:
         print_message("*********************************************************")
                 
-        # get_user_info()        
-        # last_id = get_game_config()
-        # action_attack(last_id)
-        # while refill_amt>0:
-        #     last_id = get_recharge_boost()
-        #     action_attack(last_id)
-        #     if time_att >=50 and current_energy == max_energy:
-        #         print("===The is something wrong with the game===")
-        #         return 
-        # sleep(3,6)
+        get_user_info()        
+        last_id = get_game_config()
+        action_attack(last_id)
+        while refill_amt>0:
+            last_id = get_recharge_boost()
+            action_attack(last_id)
+            if time_att >=50 and current_energy == max_energy:
+                print("===The is something wrong with the game===")
+                return 
+        sleep(3,6)
         
         get_tapbot_config() 
       
