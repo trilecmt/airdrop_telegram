@@ -36,6 +36,7 @@ def exec(token, proxy_url:str):
     time_att = 1
     att_dmg = 0
     refill_amt = 3
+    current_coin = 0
     
     
     def get_user_info()-> str:        
@@ -56,6 +57,7 @@ def exec(token, proxy_url:str):
         nonlocal att_dmg
         nonlocal refill_amt
         nonlocal max_energy
+        nonlocal current_coin
         data = response_data["data"]
         key = next(iter(response_data["data"]))            
         current_energy = data[key]['currentEnergy']
@@ -98,7 +100,7 @@ def exec(token, proxy_url:str):
         key = next(iter(data))
         is_purchase = data[key]["isPurchased"]
         remain= data[key]["totalAttempts"] - data[key]["usedAttempts"]        
-        current_coin = data[key]['coinsAmount']
+        # current_coin = data[key]['coinsAmount']
         end_at = get_date_format(data[key]["endsAt"])
         format_print = "%H:%M %d/%m/%Y"
         if not is_purchase:
@@ -200,16 +202,16 @@ def exec(token, proxy_url:str):
     try:
         print_message("*********************************************************")
                 
-        get_user_info()        
-        last_id = get_game_config()
-        action_attack(last_id)
-        while refill_amt>0:
-            last_id = get_recharge_boost()
-            action_attack(last_id)
-            if time_att >=50 and current_energy == max_energy:
-                print("===The is something wrong with the game===")
-                return 
-        sleep(3,6)
+        # get_user_info()        
+        # last_id = get_game_config()
+        # action_attack(last_id)
+        # while refill_amt>0:
+        #     last_id = get_recharge_boost()
+        #     action_attack(last_id)
+        #     if time_att >=50 and current_energy == max_energy:
+        #         print("===The is something wrong with the game===")
+        #         return 
+        # sleep(3,6)
         
         get_tapbot_config() 
       
