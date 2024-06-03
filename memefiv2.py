@@ -105,11 +105,20 @@ def exec(token, proxy_url:str):
         elif end_at == "":
             print_message(f"TapBot is not activated")
             print_message(f"TapBot remain time: {remain}")
+            if remain > 0:
+                sleep(3,10)
+                tapbot_activate()
+                sleep(3,5)
+                get_tapbot_config()
         else:
             print_message(f"TapBot remain time: {remain}")
-            print_message(f"Tapbot claim time: {end_at}")            
-        
-        return is_purchase, remain, end_at
+            print_message(f"Tapbot claim time: {end_at}")
+            if end_at <= datetime.now():
+                sleep(3,10)
+                tapbot_claim()
+                sleep(3,5)
+                get_tapbot_config()
+            
         
     def tapbot_claim():
         print_message("===Claiming Tapbot===")
@@ -185,15 +194,9 @@ def exec(token, proxy_url:str):
                 print("===The is something wrong with the game===")
                 return 
         sleep(3,6)
-        is_purchase, remain, end_at = get_tapbot_config() 
-        if is_purchase and remain >0:            
-            if end_at == "":
-                tapbot_activate()     
-            elif end_at <= datetime.now():
-                tapbot_claim()
-                sleep(3,6)
-                get_tapbot_config()
-                sleep(3,8)           
+        
+        get_tapbot_config() 
+      
         print_message("*********************************************************")
 
         
