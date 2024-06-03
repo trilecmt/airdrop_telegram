@@ -79,7 +79,7 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
         boost_list = response_info["boostsForBuy"]
         for element in boost_list:
             if element["id"] == "BoostFullAvailableTaps":
-                remain_boost = element["maxLevel"] - element["level"] -1
+                remain_boost = element["maxLevel"] - element["level"] + 1
                 cooldown = element["cooldownSeconds"]
         if cooldown == 0 and remain_boost>0: 
             response_info  = session.exec_post(url_buy_boost, headers=get_header(content_length="59"), data={
@@ -132,7 +132,7 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
             list_upgrade_cards,daily_combo = get_list_upgrade()
             if daily_combo['isClaimed']==False:
                 daily_combo_cards=[card for card in list_upgrade_cards if card['name'].replace("...","") in input_daily_combo_cards and card['id'] not in daily_combo['upgradeIds']]
-                if len(daily_combo_cards)==0:
+                if len(daily_combo_cards)==0 and len(input_daily_combo_cards)!=0:
                     claim_daily_combo()
                 else:
                     try:
@@ -140,6 +140,11 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
                             print_message(f"Try buy card daily event:{card['name']}->> {card['price']}")
                             if current_balance<card['price']:
                                 print_message(f"Not enough money {current_balance} / {card['price']}")
+                                break
+                            elif card['isAvailable'] == False:
+                                print_message(f"Card {card['name']} is not available")
+                                continue
+                                #If the combo card not available, process to buy other card.
                             else:      
                                 response_info  = session.exec_post(url_buy_upgrade, headers=get_header(content_length="54"), data={
                                     "upgradeId": card['id'],
@@ -149,9 +154,11 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
                                     print_message(f"Buy daily card:Buy success {picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}") 
                                 else:
                                     print_message(f"Buy daily card:Buy failed{picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}") 
+                                    
+                            sleep(3,6)
                     except Exception as e:
                         pass
-                    break
+                        # break
 
             if current_balance<limit_buy_card:
                 print_message(f"Current balance {current_balance} reach LIMIT_BUY_CARD {limit_buy_card}")
@@ -159,6 +166,8 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
            
             for card in list_upgrade_cards:
                 if card['isAvailable'] and not card['isExpired'] and card.get('totalCooldownSeconds',0)==0:
+                    if card["price"] == 0 or card["price"] is None:
+                        card["price"] = 1
                     card['ROI']=round(100*card['profitPerHourDelta']/card['price'],2)
                 else:
                     card['ROI']=None
@@ -197,7 +206,7 @@ def main(delay_time):
         if "proxy" not in df.columns:
             df["proxy"] = ""
         df['proxy']=df['proxy'].fillna('')
-        daily_combo_cards=df['daily_specical_card'].iat[0].split(";")
+        daily_combo_cards=df['daily_specical_card'].fillna(value="").iat[0].split(";")
         for idx,row in df.iterrows():
             exec(row['token'], row['list_upgrade'],proxy_url=row['proxy'],limit_buy_card=row['limit_buy_card'],input_daily_combo_cards=daily_combo_cards)
             time.sleep(10)
