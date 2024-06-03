@@ -1,3 +1,4 @@
+from multiprocessing import Pool
 import time
 import pandas as pd
 from pprint import pprint
@@ -7,6 +8,9 @@ import pandas as pd
 import random
 from helper.helper_session import MySession
 from helper.utils import print_message, sleep
+import traceback
+import sys
+import argparse  
 
 url_get_info = "https://api.hamsterkombat.io/clicker/sync"    
 url_boost = "https://api.hamsterkombat.io/clicker/boosts-for-buy"
@@ -16,11 +20,16 @@ url_ugrade_for_buy = "https://api.hamsterkombat.io/clicker/upgrades-for-buy"
 url_buy_upgrade = "https://api.hamsterkombat.io/clicker/buy-upgrade"
 url_claim_daily_combo="https://api.hamsterkombat.io/clicker/claim-daily-combo"
 
-def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_combo_cards:list):
+def exec(profile):
+    profile_id=profile['id']
+    token = profile['token']
+    list_upgrade = profile['list_upgrade']
+    proxy_url = profile['proxy_url']
+    limit_buy_card = profile['limit_buy_card']
+    input_daily_combo_cards = profile['input_daily_combo_cards']
     session=MySession()
-    session.set_proxy(proxy_url)
-    
-    list_names = [_.strip() for _ in list_names.split(",") if _ != ""]
+    ip=session.set_proxy(proxy_url)
+    profile_id=f'{profile_id}[{ip}]'
     balance = 0
     time_upgraded = 1
      
@@ -49,16 +58,14 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
     def get_user_data():
         response_info  = session.exec_post(url_get_info, headers=get_header(content_length="0"), data={})
         available_tap = response_info['clickerUser']['availableTaps']
-        print_message(f"User Id: {response_info['clickerUser']['id']}")
-        print_message(f"Current Level: {response_info['clickerUser']['level']}")
-        print_message(f"Available Tap Sync: {available_tap}")
-        print_message(f"Earn per Tap: {response_info['clickerUser']['earnPerTap']}")
+        print_message(f"#{profile_id} User Id: {response_info['clickerUser']['id']}")
+        print_message(f"#{profile_id} Current Level: {response_info['clickerUser']['level']}")
+        print_message(f"#{profile_id} Available Tap Sync: {available_tap}")
+        print_message(f"#{profile_id} Earn per Tap: {response_info['clickerUser']['earnPerTap']}")
         return response_info
     
     def click(available_tap):
         global balance
-        print_message("=================")
-        
         response_data = session.exec_post(url_tap, headers=get_header(content_length="53"), data={
             "count": random.randint(10, 30),
             "availableTaps": available_tap,
@@ -69,12 +76,12 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
         earn_per_tap = response_data['clickerUser']["earnPerTap"]   
         click_count = round(available_tap/earn_per_tap)+1
         
-        print_message(f"Available Tap: {avai_tap}")
-        print_message(f"Current Coin: {helper.utils.format_number(balance)}")
+        print_message(f"#{profile_id} Available Tap: {avai_tap}")
+        print_message(f"#{profile_id} Current Coin: {helper.utils.format_number(balance)}")
         return avai_tap
     
     def get_boost():
-        print_message("===Getting Boost===")
+        print_message(f"#{profile_id}===Getting Boost===")
         response_info  = session.exec_post(url_boost, headers=get_header(content_length="0"), data={})
         boost_list = response_info["boostsForBuy"]
         for element in boost_list:
@@ -87,13 +94,13 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
                 "timestamp": int(time.time())
             })
             available_tap = response_info['clickerUser']['availableTaps']
-            print_message(f"Available Tap After Boost: {available_tap}")
+            print_message(f"#{profile_id} Available Tap After Boost: {available_tap}")
             return available_tap
         elif cooldown > 0 :
-            print_message("NEXT BOOST:", str(int( cooldown//(60*60))).zfill(2) + "H" + str(int( cooldown %(60*60) // 60 )).zfill(2) + "M" + str(int( cooldown %(60*60) % 60 )).zfill(2) + "S")
+            print_message(f"#{profile_id} NEXT BOOST:", str(int( cooldown//(60*60))).zfill(2) + "H" + str(int( cooldown %(60*60) // 60 )).zfill(2) + "M" + str(int( cooldown %(60*60) % 60 )).zfill(2) + "S")
             return 0
         else:
-            print_message("No More Boost Left")
+            print_message(f"#{profile_id} No More Boost Left")
             return 0
     
     def looping_click(available_tap):
@@ -104,20 +111,20 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
                 break
     
     def claim_daily_combo():
-        print_message("Claming daily combo...")
+        print_message(f"#{profile_id} Claming daily combo...")
         response_info  = session.exec_post(url_claim_daily_combo, headers=get_header(content_length="0"), data={})
         if response_info is not None:
-            print_message("Claimed daily combo success.")
+            print_message(f"#{profile_id} Claimed daily combo success.")
         else:
-            print_message("Claimed daily combo failed.")
+            print_message(f"#{profile_id} Claimed daily combo failed.")
 
     def get_list_upgrade():
-        print_message("===Getting List Upgrade===")
+        print_message(f"#{profile_id}===Getting List Upgrade===")
         response_info  = session.exec_post(url_ugrade_for_buy, headers=get_header(content_length="0"), data={})
         return response_info["upgradesForBuy"],response_info["dailyCombo"]
     
     try:
-        print_message("*********************************************************")        
+           
         user_data =  get_user_data()     
         available_tap=user_data['clickerUser']['availableTaps']
         looping_click(available_tap)
@@ -137,12 +144,12 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
                 else:
                     try:
                         for card in daily_combo_cards:
-                            print_message(f"Try buy card daily event:{card['name']}->> {card['price']}")
+                            print_message(f"#{profile_id} Try buy card daily event:{card['name']}->> {card['price']}")
                             if current_balance<card['price']:
-                                print_message(f"Not enough money {current_balance} / {card['price']}")
+                                print_message(f"#{profile_id} Not enough money {current_balance} / {card['price']}")
                                 break
                             elif card['isAvailable'] == False:
-                                print_message(f"Card {card['name']} is not available")
+                                print_message(f"#{profile_id} Card {card['name']} is not available")
                                 continue
                                 #If the combo card not available, process to buy other card.
                             else:      
@@ -151,9 +158,9 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
                                     "timestamp": int(time.time())
                                 })
                                 if response_info is not None: 
-                                    print_message(f"Buy daily card:Buy success {picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}") 
+                                    print_message(f"#{profile_id} Buy daily card:Buy success {picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}") 
                                 else:
-                                    print_message(f"Buy daily card:Buy failed{picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}") 
+                                    print_message(f"#{profile_id} Buy daily card:Buy failed{picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}") 
                                     
                             sleep(3,6)
                     except Exception as e:
@@ -161,7 +168,7 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
                         # break
 
             if current_balance<limit_buy_card:
-                print_message(f"Current balance {current_balance} reach LIMIT_BUY_CARD {limit_buy_card}")
+                print_message(f"#{profile_id} Current balance {current_balance} reach LIMIT_BUY_CARD {limit_buy_card}")
                 break
            
             for card in list_upgrade_cards:
@@ -177,47 +184,58 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
                 break
             picked_upgrade_card=list_upgrade_cards[0]
             
-            print_message(f"Current Balance:{current_balance}")
+            print_message(f"#{profile_id} Current Balance:{current_balance}")
             if current_balance>picked_upgrade_card['price']:       
                 response_info  = session.exec_post(url_buy_upgrade, headers=get_header(content_length="54"), data={
                     "upgradeId": picked_upgrade_card['id'],
                     "timestamp": int(time.time())
                 })
-                print_message(f"Bought {picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}")
+                print_message(f"#{profile_id} Bought {picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}")
                 sleep(2)
             else:
-                print_message(f"Not enough coin for buy {picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}")
+                print_message(f"#{profile_id} Not enough coin for buy {picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}")
                 break
-          
-        print_message("*********************************************************")
- 
     except Exception as e:
-        import traceback
         print_message(traceback.format_exc())
 
 
-def main(delay_time):
+def main(delay_time,count_processes=2):
     try:
-        df=pd.read_excel("account.xlsx",dtype={"url":str},sheet_name='hamster')
-        df=df[(~df['url'].isna()) & (df['url']!='')]
+        df=pd.read_excel("account.xlsx",dtype={"token":str},sheet_name='hamster')
+        df=df[(~df['token'].isna()) & (df['token']!='')]
         df.reset_index(inplace=True)
         if "list_upgrade" not in df.columns:
             df["list_upgrade"] = ""
         if "proxy" not in df.columns:
             df["proxy"] = ""
         df['proxy']=df['proxy'].fillna('')
+        df['daily_specical_card']=df['daily_specical_card'].fillna('')
+        
         daily_combo_cards=df['daily_specical_card'].fillna(value="").iat[0].split(";")
+        profiles=[]
+        
         for idx,row in df.iterrows():
-            exec(row['token'], row['list_upgrade'],proxy_url=row['proxy'],limit_buy_card=row['limit_buy_card'],input_daily_combo_cards=daily_combo_cards)
-            time.sleep(10)
+            profile={
+                "id":idx+1,
+                "token":row['token'],
+                "list_upgrade":row['list_upgrade'],
+                "proxy_url":row['proxy'],
+                "limit_buy_card":row['limit_buy_card'],
+                "input_daily_combo_cards":row['daily_specical_card']
+            }
+            profiles.append(profile)
+            # exec(profile)
+        with Pool(count_processes) as p:
+            p.map(exec, profiles)
             
         time.sleep(delay_time)
     except Exception as e:
-        print_message(e)
+        print_message(traceback.format_exc())
 
 if __name__=='__main__':
     while True:
         try:
-            main(delay_time=60)                      
+            count_processes=int(input("Enter number process:"))
+            main(delay_time=60,count_processes=count_processes)                      
         except Exception as e:
-            print_message(e)
+            print_message(traceback.format_exc())

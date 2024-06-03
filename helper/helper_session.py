@@ -16,20 +16,26 @@ class MySession(requests.Session):
         
     def set_proxy(self,proxy_url:str='',is_test_after_change=True):
         if proxy_url is not None and proxy_url!='':  
-            self.proxies= {
-                'http':proxy_url,
-                'https':proxy_url
-            }
-            print_message(f'Changed proxy success==> success')
-            if is_test_after_change:
+            if not proxy_url.startswith("http"):
+                username=proxy_url.split(":")[2]
+                password=proxy_url.split(":")[3]
+                host=proxy_url.split(":")[0]
+                port=proxy_url.split(":")[1]
+                proxy_url=f'http://{username}:{password}@{host}:{port}'
+                self.proxies= {'http':proxy_url,'https':proxy_url}
+            print_message(f'Changed proxy success==> success')      
+        else:
+            print("Countinue without proxy.")
+            
+        if is_test_after_change:
                 print_message("Checking new IP...")
                 response = self.exec_get(url="https://api.myip.com/",headers={"content-type": "application/json"})
                 if response is None:
                     print_message(f"Get new IP Failed")
                 else:
                     print_message(f"New IP:{response['ip']}")
-        else:
-            print("Countinue without proxy.")
+                    return response['ip']
+                
     def exec_post(self,url, headers, data):
         try:
             response_info  = self.post(url, headers=headers, data=json.dumps(data))
