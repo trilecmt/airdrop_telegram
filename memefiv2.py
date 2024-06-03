@@ -104,8 +104,9 @@ def exec(token, proxy_url:str):
         if not is_purchase:
             print_message(f"TapBot is not purchased")
             if current_coin >= 200000:
-                tapbot_buying()
                 sleep(3,10)
+                tapbot_buying()
+                sleep(3,5)
                 get_tapbot_config()
             else:
                 print("===Not Enough Coin to buy TapBot===")
