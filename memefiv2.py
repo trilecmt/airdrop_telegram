@@ -98,10 +98,17 @@ def exec(token, proxy_url:str):
         key = next(iter(data))
         is_purchase = data[key]["isPurchased"]
         remain= data[key]["totalAttempts"] - data[key]["usedAttempts"]        
+        current_coin = data[key]['coinsAmount']
         end_at = get_date_format(data[key]["endsAt"])
         format_print = "%H:%M %d/%m/%Y"
         if not is_purchase:
             print_message(f"TapBot is not purchased")
+            if current_coin >= 200000:
+                tapbot_buying()
+                sleep(3,10)
+                get_tapbot_config()
+            else:
+                print("===Not Enough Coin to buy TapBot===")
         elif end_at == "":
             print_message(f"TapBot is not activated")
             print_message(f"TapBot remain time: {remain}")
@@ -134,10 +141,18 @@ def exec(token, proxy_url:str):
         payload = {
         "operationName": "TapbotStart",
         "variables": {},
-        "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nmutation TapbotStart {\n  telegramGameTapbotStart {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
+        "query": "mutation telegramGamePurchaseUpgrade($upgradeType: UpgradeType!) {\n  telegramGamePurchaseUpgrade(type: $upgradeType) {\n    ...FragmentBossFightConfig\n    __typename\n  }\n}\n\nfragment FragmentBossFightConfig on TelegramGameConfigOutput {\n  _id\n  coinsAmount\n  currentEnergy\n  maxEnergy\n  weaponLevel\n  energyLimitLevel\n  energyRechargeLevel\n  tapBotLevel\n  currentBoss {\n    _id\n    level\n    currentHealth\n    maxHealth\n    __typename\n  }\n  freeBoosts {\n    _id\n    currentTurboAmount\n    maxTurboAmount\n    turboLastActivatedAt\n    turboAmountLastRechargeDate\n    currentRefillEnergyAmount\n    maxRefillEnergyAmount\n    refillEnergyLastActivatedAt\n    refillEnergyAmountLastRechargeDate\n    __typename\n  }\n  bonusLeaderDamageEndAt\n  bonusLeaderDamageStartAt\n  bonusLeaderDamageMultiplier\n  nonce\n  __typename\n}"
         }
         response_data = session.exec_post(url, headers=header, data=payload)       
         
+    def tapbot_buying():
+        print_message("===Buying Tapbot===")
+        payload = {
+        "operationName": "telegramGamePurchaseUpgrade",
+        "variables": {"upgradeType": "TapBot"},
+        "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nmutation TapbotStart {\n  telegramGameTapbotStart {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
+        }
+        response_data = session.exec_post(url, headers=header, data=payload)
     
     def attack(last_id: str):
         nonlocal time_att        
