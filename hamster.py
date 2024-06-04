@@ -72,21 +72,21 @@ def exec(profile):
         return response_info
     
     def claim_login():
-        print_message("===Checking Daily Login Info===")
+        print_message(f"#{profile_id} =>Checking Daily Login Info")
         response_info  = session.exec_post(url_check_task, headers=get_header(), data={})
         for task in response_info["tasks"]:
             if task["id"] == "streak_days" and task["isCompleted"] == False:
                 sleep(1,3)
-                print_message("===Daily Login Not Claimed===")
-                print_message("===Claiming Daily Login Rewards===")
+                print_message(f"#{profile_id} Daily Login Not Claimed")
+                print_message(f"#{profile_id} Claiming Daily Login Rewards")
                 payload = {"taskId": "streak_days"}
-                response_info = session.exec_post(url_check_in, headers=get_header(content_length= 24), data=payload)
+                response_info = session.exec_post(url_check_in, headers=get_header(content_length= "24"), data=payload)
                 day_streak = response_info["task"]["days"]
                 for _ in  response_info["task"]["rewardsByDays"]:
                     if _["days"] == day_streak:
-                        print(f"===Claim Sucess for Streak {day_streak} Days - {_['rewardCoins']} Coin===")
+                        print_message(f"#{profile_id} Claim Sucess for Streak {day_streak} Days - {_['rewardCoins']} Coin")
             elif task["id"] == "streak_days" and task["isCompleted"] == True:
-                print_message("===Daily Login Claimed===")
+                print_message(f"#{profile_id} Daily Login Claimed===")
     
     def click(available_tap):
         nonlocal balance
@@ -113,13 +113,13 @@ def exec(profile):
                 "timestamp": int(time.time())
             })
             if response_info is not None:
-                print_message(f"===Get {id} Successed===")
+                print_message(f"#{profile_id}===Get {id} Successed===")
                 balance = round(response_info['clickerUser']['balanceCoins'],0)   
             return response_info
         
         multi_tap_level= int(utils.read_config(section='HAMSTER',key='multi_tap_level'))
         energy_level=int(utils.read_config(section='HAMSTER',key='energy_level'))
-        print_message(f"#{profile_id}===Getting Boost===")
+        print_message(f"#{profile_id} => Getting Boost")
         response_info  = session.exec_post(url_boost, headers=get_header(), data={})
         sleep(3,5)
         boost_list = response_info["boostsForBuy"]
@@ -129,12 +129,12 @@ def exec(profile):
                 cooldown = element["cooldownSeconds"]
             elif element["id"] == "BoostEarnPerTap":
                 if element["level"] < multi_tap_level and balance > element["price"]:
-                    print_message(f'===Buying MultiTapLevel to level {element["level"] + 1} with price: {format_number(element["price"])}')
+                    print_message(f'#{profile_id} -Buying MultiTapLevel to level {element["level"] + 1} with price: {format_number(element["price"])}')
                     buy_boost("BoostEarnPerTap")
                     sleep(3,5)
             elif element["id"] == "BoostMaxTaps":
                 if element["level"] < energy_level and balance > element["price"]:
-                    print_message(f'===Buying EngergyMax to level {element["level"] + 1} with price: {format_number(element["price"])}')
+                    print_message(f'#{profile_id} -Buying EngergyMax to level {element["level"] + 1} with price: {format_number(element["price"])}')
                     buy_boost("BoostMaxTaps")
                     sleep(3,5)                
         if cooldown == 0 and remain_boost>0: 
@@ -157,7 +157,7 @@ def exec(profile):
                 break
     
     def claim_daily_combo():
-        print_message(f"#{profile_id} Claming daily combo...")
+        print_message(f"#{profile_id} =>Claming daily combo...")
         response_info  = session.exec_post(url_claim_daily_combo, headers=get_header(), data={})
         if response_info is not None:
             print_message(f"#{profile_id} Claimed daily combo success.")
@@ -165,20 +165,20 @@ def exec(profile):
             print_message(f"#{profile_id} Claimed daily combo failed.")
 
     def get_list_upgrade():
-        print_message(f"#{profile_id}===Getting List Upgrade===")
+        print_message(f"#{profile_id} => Getting List Upgrade")
         response_info  = session.exec_post(url_ugrade_for_buy, headers=get_header(), data={})
         return response_info["upgradesForBuy"],response_info["dailyCombo"]
     
     try:
            
-        # user_data =  get_user_data()     
-        # claim_login()
-        # available_tap=user_data['clickerUser']['availableTaps']
-        # looping_click(available_tap)
-        # time.sleep(5)
-        # available_tap = get_boost()
-        # if available_tap != 0:
-        #     looping_click(available_tap)
+        user_data =  get_user_data()     
+        claim_login()
+        available_tap=user_data['clickerUser']['availableTaps']
+        looping_click(available_tap)
+        time.sleep(5)
+        available_tap = get_boost()
+        if available_tap != 0:
+            looping_click(available_tap)
         
         for i in range(50):    
             user_data =  get_user_data()   
@@ -248,6 +248,7 @@ def exec(profile):
 
 def main(delay_time,count_processes=2):
     try:
+        
         df=pd.read_excel("account.xlsx",dtype={"token":str},sheet_name='hamster')
         df=df[(~df['token'].isna()) & (df['token']!='')]
         df.reset_index(inplace=True)
@@ -278,9 +279,10 @@ def main(delay_time,count_processes=2):
                 p.map(exec, profiles)
         else:
             for profile in profiles:
-                exec(profile)
-            
-        time.sleep(delay_time)
+                exec(profile)    
+        print_message(f"Sleeping {utils.read_config(section="HAMSTER",key= "delay_time_in_minute")} minutes...")
+        time.sleep(utils.read_config(section="HAMSTER",key= "delay_time_in_minute"))
+
     except Exception as e:
         print_message(traceback.format_exc())
 

@@ -27,7 +27,7 @@ class MySession(requests.Session):
                     host=proxy_url.split(":")[0]
                     port=proxy_url.split(":")[1]
                     proxy_url=f'http://{username}:{password}@{host}:{port}'
-                self.proxies= {'http':proxy_url,'https':proxy_url}
+            self.proxies= {'http':proxy_url,'https':proxy_url}
             print_message(f'Changed proxy success==> success')      
         else:
             print("Countinue without proxy.")
