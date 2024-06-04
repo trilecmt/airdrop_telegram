@@ -269,7 +269,7 @@ def main(delay_time,count_processes=2):
                 "list_upgrade":row['list_upgrade'],
                 "proxy_url":row['proxy'],
                 "limit_buy_card":row['limit_buy_card'],
-                "input_daily_combo_cards":row['daily_specical_card']
+                "input_daily_combo_cards":daily_combo_cards
             }
             profiles.append(profile)
             # exec(profile)

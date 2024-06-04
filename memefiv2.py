@@ -37,6 +37,7 @@ def exec(token, proxy_url:str):
     att_dmg = 0
     refill_amt = 3
     current_coin = 0
+    current_boss_health= 1000
     
     
     def get_user_info()-> str:        
@@ -58,6 +59,7 @@ def exec(token, proxy_url:str):
         nonlocal refill_amt
         nonlocal max_energy
         nonlocal current_coin
+        nonlocal current_boss_health
         data = response_data["data"]
         key = next(iter(response_data["data"]))            
         current_energy = data[key]['currentEnergy']
@@ -65,6 +67,12 @@ def exec(token, proxy_url:str):
         current_coin = data[key]['coinsAmount']   
         att_dmg = data[key]['weaponLevel'] +1
         refill_amt = data[key]['freeBoosts']['currentRefillEnergyAmount'] 
+        current_boss_health  = data[key]['currentBoss']["currentHealth"]
+        if current_boss_health == 0:
+            sleep(3,7)
+            move_to_next_boss()
+            sleep(1,3)
+            get_game_config()            
         print_message(f"Current Coin: {format_number(current_coin)}, Energy: {current_energy}/{max_energy}. Recharge left: {refill_amt}") 
         return data[key]['nonce']
     
@@ -156,6 +164,16 @@ def exec(token, proxy_url:str):
         "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nmutation TapbotStart {\n  telegramGameTapbotStart {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
         }
         response_data = session.exec_post(url, headers=header, data=payload)
+    
+    def move_to_next_boss():
+        print_message("===Moving to Next Boss")
+        payload = {
+        "operationName": "telegramGameSetNextBoss",
+        "variables": {},
+        "query": "mutation telegramGameSetNextBoss {\n  telegramGameSetNextBoss {\n    ...FragmentBossFightConfig\n    __typename\n  }\n}\n\nfragment FragmentBossFightConfig on TelegramGameConfigOutput {\n  _id\n  coinsAmount\n  currentEnergy\n  maxEnergy\n  weaponLevel\n  energyLimitLevel\n  energyRechargeLevel\n  tapBotLevel\n  currentBoss {\n    _id\n    level\n    currentHealth\n    maxHealth\n    __typename\n  }\n  freeBoosts {\n    _id\n    currentTurboAmount\n    maxTurboAmount\n    turboLastActivatedAt\n    turboAmountLastRechargeDate\n    currentRefillEnergyAmount\n    maxRefillEnergyAmount\n    refillEnergyLastActivatedAt\n    refillEnergyAmountLastRechargeDate\n    __typename\n  }\n  bonusLeaderDamageEndAt\n  bonusLeaderDamageStartAt\n  bonusLeaderDamageMultiplier\n  nonce\n  __typename\n}"
+        }
+        response_data = session.exec_post(url, headers=header, data=payload)
+    
     
     def attack(last_id: str):
         nonlocal time_att        
