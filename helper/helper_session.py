@@ -17,11 +17,16 @@ class MySession(requests.Session):
     def set_proxy(self,proxy_url:str='',is_test_after_change=True):
         if proxy_url is not None and proxy_url!='':  
             if not proxy_url.startswith("http"):
-                username=proxy_url.split(":")[2]
-                password=proxy_url.split(":")[3]
-                host=proxy_url.split(":")[0]
-                port=proxy_url.split(":")[1]
-                proxy_url=f'http://{username}:{password}@{host}:{port}'
+                if len(proxy_url.split(":"))==2:       
+                    host=proxy_url.split(":")[0]
+                    port=proxy_url.split(":")[1]
+                    proxy_url=f'http://{host}:{port}'
+                else:
+                    username=proxy_url.split(":")[2]
+                    password=proxy_url.split(":")[3]
+                    host=proxy_url.split(":")[0]
+                    port=proxy_url.split(":")[1]
+                    proxy_url=f'http://{username}:{password}@{host}:{port}'
                 self.proxies= {'http':proxy_url,'https':proxy_url}
             print_message(f'Changed proxy success==> success')      
         else:
