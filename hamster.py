@@ -281,7 +281,7 @@ def main(delay_time,count_processes=2):
             for profile in profiles:
                 exec(profile)    
         print_message(f"Sleeping {utils.read_config(section="HAMSTER",key= "delay_time_in_minute")} minutes...")
-        time.sleep(utils.read_config(section="HAMSTER",key= "delay_time_in_minute"))
+        time.sleep(int(utils.read_config(section="HAMSTER",key= "delay_time_in_minute")))
 
     except Exception as e:
         print_message(traceback.format_exc())
