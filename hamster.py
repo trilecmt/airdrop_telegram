@@ -31,7 +31,7 @@ def exec(profile):
     list_upgrade = profile['list_upgrade']
     proxy_url = profile['proxy_url']
     limit_buy_card = profile['limit_buy_card']
-    input_daily_combo_cards = profile['input_daily_combo_cards']
+    input_daily_combo_cards = [_ for _ in profile['input_daily_combo_cards'] if _ != ""]
     session=MySession()
     ip=session.set_proxy(proxy_url)
     profile_id=f'{profile_id}[{ip}]'
@@ -171,14 +171,14 @@ def exec(profile):
     
     try:
            
-        user_data =  get_user_data()     
-        claim_login()
-        available_tap=user_data['clickerUser']['availableTaps']
-        looping_click(available_tap)
-        time.sleep(5)
-        available_tap = get_boost()
-        if available_tap != 0:
-            looping_click(available_tap)
+        # user_data =  get_user_data()     
+        # claim_login()
+        # available_tap=user_data['clickerUser']['availableTaps']
+        # looping_click(available_tap)
+        # time.sleep(5)
+        # available_tap = get_boost()
+        # if available_tap != 0:
+        #     looping_click(available_tap)
         
         for i in range(50):    
             user_data =  get_user_data()   
@@ -269,7 +269,7 @@ def main(delay_time,count_processes=2):
                 "list_upgrade":row['list_upgrade'],
                 "proxy_url":row['proxy'],
                 "limit_buy_card":row['limit_buy_card'],
-                "input_daily_combo_cards":row['daily_specical_card']
+                "input_daily_combo_cards":daily_combo_cards
             }
             profiles.append(profile)
             # exec(profile)
