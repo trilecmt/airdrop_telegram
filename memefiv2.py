@@ -36,6 +36,7 @@ def exec(token, proxy_url:str):
     time_att = 1
     att_dmg = 0
     refill_amt = 3
+    current_coin = 0
     
     
     def get_user_info()-> str:        
@@ -56,6 +57,7 @@ def exec(token, proxy_url:str):
         nonlocal att_dmg
         nonlocal refill_amt
         nonlocal max_energy
+        nonlocal current_coin
         data = response_data["data"]
         key = next(iter(response_data["data"]))            
         current_energy = data[key]['currentEnergy']
@@ -98,18 +100,35 @@ def exec(token, proxy_url:str):
         key = next(iter(data))
         is_purchase = data[key]["isPurchased"]
         remain= data[key]["totalAttempts"] - data[key]["usedAttempts"]        
+        # current_coin = data[key]['coinsAmount']
         end_at = get_date_format(data[key]["endsAt"])
         format_print = "%H:%M %d/%m/%Y"
         if not is_purchase:
             print_message(f"TapBot is not purchased")
+            if current_coin >= 200000:
+                sleep(3,10)
+                tapbot_buying()
+                sleep(3,5)
+                get_tapbot_config()
+            else:
+                print("===Not Enough Coin to buy TapBot===")
         elif end_at == "":
             print_message(f"TapBot is not activated")
             print_message(f"TapBot remain time: {remain}")
+            if remain > 0:
+                sleep(3,10)
+                tapbot_activate()
+                sleep(3,5)
+                get_tapbot_config()
         else:
             print_message(f"TapBot remain time: {remain}")
-            print_message(f"Tapbot claim time: {end_at}")            
-        
-        return is_purchase, remain, end_at
+            print_message(f"Tapbot claim time: {end_at}")
+            if end_at <= datetime.now():
+                sleep(3,10)
+                tapbot_claim()
+                sleep(3,5)
+                get_tapbot_config()
+            
         
     def tapbot_claim():
         print_message("===Claiming Tapbot===")
@@ -129,6 +148,14 @@ def exec(token, proxy_url:str):
         }
         response_data = session.exec_post(url, headers=header, data=payload)       
         
+    def tapbot_buying():
+        print_message("===Buying Tapbot===")
+        payload = {
+        "operationName": "telegramGamePurchaseUpgrade",
+        "variables": {"upgradeType": "TapBot"},
+        "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nmutation TapbotStart {\n  telegramGameTapbotStart {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
+        }
+        response_data = session.exec_post(url, headers=header, data=payload)
     
     def attack(last_id: str):
         nonlocal time_att        
@@ -154,7 +181,7 @@ def exec(token, proxy_url:str):
     def action_attack(last_id):
         while current_energy> att_dmg *10:
             last_id = attack(last_id)            
-            time.sleep(4)
+            sleep(9,15)
     
     def get_recharge_boost():
         nonlocal time_att  
@@ -185,15 +212,9 @@ def exec(token, proxy_url:str):
                 print("===The is something wrong with the game===")
                 return 
         sleep(3,6)
-        is_purchase, remain, end_at = get_tapbot_config() 
-        if is_purchase and remain >0:            
-            if end_at == "":
-                tapbot_activate()     
-            elif end_at <= datetime.now():
-                tapbot_claim()
-                sleep(3,6)
-                get_tapbot_config()
-                sleep(3,8)           
+        
+        get_tapbot_config() 
+      
         print_message("*********************************************************")
 
         
