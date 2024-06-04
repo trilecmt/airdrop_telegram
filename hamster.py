@@ -7,10 +7,12 @@ import helper
 import pandas as pd
 import random
 from helper.helper_session import MySession
-from helper.utils import print_message, sleep
+from helper.utils import print_message, sleep, format_number
 import traceback
 import sys
 import argparse  
+import  helper.utils as utils
+
 
 url_get_info = "https://api.hamsterkombat.io/clicker/sync"    
 url_boost = "https://api.hamsterkombat.io/clicker/boosts-for-buy"
@@ -19,6 +21,9 @@ url_buy_boost = "https://api.hamsterkombat.io/clicker/buy-boost"
 url_ugrade_for_buy = "https://api.hamsterkombat.io/clicker/upgrades-for-buy"
 url_buy_upgrade = "https://api.hamsterkombat.io/clicker/buy-upgrade"
 url_claim_daily_combo="https://api.hamsterkombat.io/clicker/claim-daily-combo"
+url_check_task = "https://api.hamsterkombat.io/clicker/list-tasks"
+url_check_in = "https://api.hamsterkombat.io/clicker/check-task"
+
 
 def exec(profile):
     profile_id=profile['id']
@@ -33,7 +38,7 @@ def exec(profile):
     balance = 0
     time_upgraded = 1
      
-    def get_header(content_length):
+    def get_header(content_length = "0"):
         headers = {
             "Accept-Encoding": "gzip, deflate, br, zstd",
             "Accept-Language": "en-US,en;q=0.9",
@@ -56,16 +61,36 @@ def exec(profile):
         return headers
         
     def get_user_data():
-        response_info  = session.exec_post(url_get_info, headers=get_header(content_length="0"), data={})
+        nonlocal balance
+        response_info  = session.exec_post(url_get_info, headers=get_header(), data={})
         available_tap = response_info['clickerUser']['availableTaps']
+        balance = round(response_info['clickerUser']['balanceCoins'],0)     
         print_message(f"#{profile_id} User Id: {response_info['clickerUser']['id']}")
         print_message(f"#{profile_id} Current Level: {response_info['clickerUser']['level']}")
         print_message(f"#{profile_id} Available Tap Sync: {available_tap}")
         print_message(f"#{profile_id} Earn per Tap: {response_info['clickerUser']['earnPerTap']}")
         return response_info
     
+    def claim_login():
+        print_message("===Checking Daily Login Info===")
+        response_info  = session.exec_post(url_check_task, headers=get_header(), data={})
+        for task in response_info["tasks"]:
+            if task["id"] == "streak_days" and task["isCompleted"] == False:
+                sleep(1,3)
+                print_message("===Daily Login Not Claimed===")
+                print_message("===Claiming Daily Login Rewards===")
+                payload = {"taskId": "streak_days"}
+                response_info = session.exec_post(url_check_in, headers=get_header(content_length= 24), data=payload)
+                day_streak = response_info["task"]["days"]
+                for _ in  response_info["task"]["rewardsByDays"]:
+                    if _["days"] == day_streak:
+                        print(f"===Claim Sucess for Streak {day_streak} Days - {_['rewardCoins']} Coin===")
+            elif task["id"] == "streak_days" and task["isCompleted"] == True:
+                print_message("===Daily Login Claimed===")
+    
     def click(available_tap):
-        global balance
+        nonlocal balance
+        # print_message("======")
         response_data = session.exec_post(url_tap, headers=get_header(content_length="53"), data={
             "count": random.randint(10, 30),
             "availableTaps": available_tap,
@@ -81,18 +106,39 @@ def exec(profile):
         return avai_tap
     
     def get_boost():
+        def buy_boost(id: str):
+            nonlocal balance
+            response_info  = session.exec_post(url_buy_boost, headers=get_header(content_length="52"), data={
+                "boostId": id,
+                "timestamp": int(time.time())
+            })
+            if response_info is not None:
+                print_message(f"===Get {id} Successed===")
+                balance = round(response_info['clickerUser']['balanceCoins'],0)   
+            return response_info
+        
+        multi_tap_level= int(utils.read_config(section='HAMSTER',key='multi_tap_level'))
+        energy_level=int(utils.read_config(section='HAMSTER',key='energy_level'))
         print_message(f"#{profile_id}===Getting Boost===")
-        response_info  = session.exec_post(url_boost, headers=get_header(content_length="0"), data={})
+        response_info  = session.exec_post(url_boost, headers=get_header(), data={})
+        sleep(3,5)
         boost_list = response_info["boostsForBuy"]
         for element in boost_list:
             if element["id"] == "BoostFullAvailableTaps":
                 remain_boost = element["maxLevel"] - element["level"] + 1
                 cooldown = element["cooldownSeconds"]
+            elif element["id"] == "BoostEarnPerTap":
+                if element["level"] < multi_tap_level and balance > element["price"]:
+                    print_message(f'===Buying MultiTapLevel to level {element["level"] + 1} with price: {format_number(element["price"])}')
+                    buy_boost("BoostEarnPerTap")
+                    sleep(3,5)
+            elif element["id"] == "BoostMaxTaps":
+                if element["level"] < energy_level and balance > element["price"]:
+                    print_message(f'===Buying EngergyMax to level {element["level"] + 1} with price: {format_number(element["price"])}')
+                    buy_boost("BoostMaxTaps")
+                    sleep(3,5)                
         if cooldown == 0 and remain_boost>0: 
-            response_info  = session.exec_post(url_buy_boost, headers=get_header(content_length="59"), data={
-                "boostId": "BoostFullAvailableTaps",
-                "timestamp": int(time.time())
-            })
+            response_info  =  buy_boost("BoostFullAvailableTaps") 
             available_tap = response_info['clickerUser']['availableTaps']
             print_message(f"#{profile_id} Available Tap After Boost: {available_tap}")
             return available_tap
@@ -112,7 +158,7 @@ def exec(profile):
     
     def claim_daily_combo():
         print_message(f"#{profile_id} Claming daily combo...")
-        response_info  = session.exec_post(url_claim_daily_combo, headers=get_header(content_length="0"), data={})
+        response_info  = session.exec_post(url_claim_daily_combo, headers=get_header(), data={})
         if response_info is not None:
             print_message(f"#{profile_id} Claimed daily combo success.")
         else:
@@ -120,12 +166,13 @@ def exec(profile):
 
     def get_list_upgrade():
         print_message(f"#{profile_id}===Getting List Upgrade===")
-        response_info  = session.exec_post(url_ugrade_for_buy, headers=get_header(content_length="0"), data={})
+        response_info  = session.exec_post(url_ugrade_for_buy, headers=get_header(), data={})
         return response_info["upgradesForBuy"],response_info["dailyCombo"]
     
     try:
            
         user_data =  get_user_data()     
+        claim_login()
         available_tap=user_data['clickerUser']['availableTaps']
         looping_click(available_tap)
         time.sleep(5)
@@ -214,6 +261,7 @@ def main(delay_time,count_processes=2):
         daily_combo_cards=df['daily_specical_card'].fillna(value="").iat[0].split(";")
         profiles=[]
         
+        
         for idx,row in df.iterrows():
             profile={
                 "id":idx+1,
@@ -225,17 +273,18 @@ def main(delay_time,count_processes=2):
             }
             profiles.append(profile)
             # exec(profile)
-        with Pool(count_processes) as p:
-            p.map(exec, profiles)
+        if count_processes !=1:
+            with Pool(count_processes) as p:
+                p.map(exec, profiles)
+        else:
+            for profile in profiles:
+                exec(profile)
             
         time.sleep(delay_time)
     except Exception as e:
         print_message(traceback.format_exc())
 
 if __name__=='__main__':
-    while True:
-        try:
-            count_processes=int(input("Enter number process:"))
-            main(delay_time=60,count_processes=count_processes)                      
-        except Exception as e:
-            print_message(traceback.format_exc())
+    count_processes=int(input("Enter number process:"))
+    while True:        
+        main(delay_time=60,count_processes=count_processes)                      
