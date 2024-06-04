@@ -1,6 +1,7 @@
 import login_drivers.gen_login_driver
 import login_drivers.gpm_login_driver
 from helper.utils import print_message,sleep
+import  helper.utils as utils
 
 def delete_profile(driver_name,profile_name):
     driver_login=get_driver_login(driver_name)
@@ -36,5 +37,9 @@ def get_driver_login(driver_name:str):
     if driver_name=="GEN_LOGIN":
         driver_login=login_drivers.gen_login_driver.GenLoginDriver(api_url='http://localhost:55550/backend/profiles')
     if driver_name=="GPM_LOGIN":   
-        driver_login=login_drivers.gpm_login_driver.GPMLoginApiV3(api_url='http://127.0.0.1:19995/api/v3/profiles')
+        
+        url=utils.read_config(section='GPM',key='url')
+        if url is None or url=='':
+            url='http://127.0.0.1:19995'
+        driver_login=login_drivers.gpm_login_driver.GPMLoginApiV3(api_url=f'{url}/api/v3/profiles')
     return driver_login
