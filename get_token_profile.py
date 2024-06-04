@@ -28,7 +28,8 @@ def exec():
     for idx,row in df.iterrows():
         profile=row['profile']
         driver_login,driver=helper.helper_driver.start_profile(driver_name='GPM_LOGIN',profile_name=profile,window_size=DEFAULT_WINDOW_SIZE)  
-        driver.get(row['url'])
+        url=row['url'].replace("tgWebAppPlatform=weba","tgWebAppPlatform=android").replace("tgWebAppPlatform=web","tgWebAppPlatform=android")
+        driver.get(url)
      
         el=driver_helper.wait_element_appear(driver,value="//*[@class='bottom-sheet open']",timeout=60)
         driver
