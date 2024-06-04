@@ -91,19 +91,27 @@ def exec(profile):
     def click(available_tap):
         nonlocal balance
         # print_message("======")
-        response_data = session.exec_post(url_tap, headers=get_header(content_length="53"), data={
-            "count": random.randint(10, 30),
-            "availableTaps": available_tap,
-            "timestamp": int(time.time())
-        })        
-        avai_tap = response_data['clickerUser']['availableTaps']
-        balance = round(response_data['clickerUser']['balanceCoins'],0)     
-        earn_per_tap = response_data['clickerUser']["earnPerTap"]   
-        click_count = round(available_tap/earn_per_tap)+1
-        
-        print_message(f"#{profile_id} Available Tap: {avai_tap}")
-        print_message(f"#{profile_id} Current Coin: {helper.utils.format_number(balance)}")
-        return avai_tap
+        try:
+            response_data = session.exec_post(url_tap, headers=get_header(content_length="53"), data={
+                "count": random.randint(10, 30),
+                "availableTaps": available_tap,
+                "timestamp": int(time.time())
+            })    
+            if response_data is not None:    
+                avai_tap = response_data['clickerUser']['availableTaps']
+                balance = round(response_data['clickerUser']['balanceCoins'],0)     
+                earn_per_tap = response_data['clickerUser']["earnPerTap"]   
+                click_count = round(available_tap/earn_per_tap)+1
+                
+                print_message(f"#{profile_id} Available Tap: {avai_tap}")
+                print_message(f"#{profile_id} Current Coin: {helper.utils.format_number(balance)}")
+                return avai_tap
+            else:
+                print_message(f"#{profile_id} ====>>>>ERROR WHEN TAP<<<<<<<<<<")
+                return 0
+        except Exception as e:
+            print_message(traceback.format_exc())
+            return 0
     
     def get_boost():
         def buy_boost(id: str):
