@@ -29,10 +29,9 @@ def exec():
         profile=row['profile']
         driver_login,driver=helper.helper_driver.start_profile(driver_name='GPM_LOGIN',profile_name=profile,window_size=DEFAULT_WINDOW_SIZE)  
         driver.get(row['url'])
-        #Đợi trang tải hoàn toàn (nếu cần thiết)
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
+     
+        el=driver_helper.wait_element_appear(driver,value="//*[@class='bottom-sheet open']",timeout=60)
+        driver
         # Lấy dữ liệu từ LocalStorage
         local_storage_data = driver.execute_script(f"return window.localStorage.getItem('{KEY}');")
         print(f"LocalStorage Data: {local_storage_data}")
