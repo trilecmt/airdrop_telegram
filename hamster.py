@@ -99,7 +99,7 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
     def looping_click(available_tap):
         while True:
             remain_tap = click(available_tap)
-            time.sleep(5)
+            sleep(9,15)
             if remain_tap ==0:
                 break
     
@@ -198,8 +198,8 @@ def exec(token, list_names: str,proxy_url:str,limit_buy_card:int,input_daily_com
 
 def main(delay_time):
     try:
-        df=pd.read_excel("account.xlsx",dtype={"url":str},sheet_name='hamster')
-        df=df[(~df['url'].isna()) & (df['url']!='')]
+        df=pd.read_excel("account.xlsx",dtype={"token":str},sheet_name='hamster')
+        df=df[(~df['token'].isna()) & (df['token']!='')]
         df.reset_index(inplace=True)
         if "list_upgrade" not in df.columns:
             df["list_upgrade"] = ""

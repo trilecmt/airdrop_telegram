@@ -181,7 +181,7 @@ def exec(token, proxy_url:str):
     def action_attack(last_id):
         while current_energy> att_dmg *10:
             last_id = attack(last_id)            
-            sleep(6,10)
+            sleep(9,15)
     
     def get_recharge_boost():
         nonlocal time_att  
