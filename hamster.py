@@ -244,15 +244,17 @@ def exec(profile):
     try:
         user_data =  get_user_data()     
         claim_login()
-        is_continue=buy_daily_combo_card()
-        if not is_continue:
-            return
+        
         available_tap=user_data['clickerUser']['availableTaps']
         looping_click(available_tap)
         time.sleep(5)
         available_tap = get_boost()
         if available_tap != 0:
             looping_click(available_tap)
+        
+        is_continue=buy_daily_combo_card()
+        if not is_continue:
+            return
         
         for i in range(50):    
             user_data =  get_user_data()   
