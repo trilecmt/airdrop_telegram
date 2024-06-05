@@ -176,7 +176,7 @@ def exec(profile):
     def looping_click(available_tap):
         while True:
             remain_tap = click(available_tap)
-            sleep(9,15)
+            sleep(2,4)
             if remain_tap ==0:
                 break
     
@@ -247,7 +247,7 @@ def exec(profile):
         
         available_tap=user_data['clickerUser']['availableTaps']
         looping_click(available_tap)
-        time.sleep(5)
+        time.sleep(2)
         available_tap = get_boost()
         if available_tap != 0:
             looping_click(available_tap)
