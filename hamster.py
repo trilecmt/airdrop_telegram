@@ -109,7 +109,7 @@ def exec(profile):
         # print_message("======")
         try:
             response_data = session.exec_post(url_tap, headers=get_header(content_length="53"), data={
-                "count": random.randint(10, 30),
+                "count": random.randint(50, 100),
                 "availableTaps": available_tap,
                 "timestamp": int(time.time())
             })    
@@ -176,7 +176,7 @@ def exec(profile):
     def looping_click(available_tap):
         while True:
             remain_tap = click(available_tap)
-            sleep(4,6)
+            sleep(2,3)
             if remain_tap ==0:
                 break
     
