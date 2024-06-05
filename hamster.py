@@ -1,3 +1,4 @@
+import datetime
 from multiprocessing import Pool
 import time
 import pandas as pd
@@ -23,7 +24,20 @@ url_buy_upgrade = "https://api.hamsterkombat.io/clicker/buy-upgrade"
 url_claim_daily_combo="https://api.hamsterkombat.io/clicker/claim-daily-combo"
 url_check_task = "https://api.hamsterkombat.io/clicker/list-tasks"
 url_check_in = "https://api.hamsterkombat.io/clicker/check-task"
+import requests
 
+def get_daily_cards():
+    url = 'https://raw.githubusercontent.com/trilecmt/airdrop_telegram/main/resources/hamster_daily_cards.json'
+    f = requests.get(url)
+    data = f.json()
+    now=(datetime.datetime.utcnow()+datetime.timedelta(hours=7))
+    if now.hour<=19:
+        now-=datetime.timedelta(days=1)
+    _data=[item for item in data if item['date']==now.strftime("%Y%m%d")]
+    if len(_data)==0:
+        return None
+   
+    return _data[0]["cards"]
 
 def exec(profile):
     profile_id=profile['id']
@@ -31,7 +45,7 @@ def exec(profile):
     list_upgrade = profile['list_upgrade']
     proxy_url = profile['proxy_url']
     limit_buy_card = profile['limit_buy_card']
-    input_daily_combo_cards = [_ for _ in profile['input_daily_combo_cards'] if _ != ""]
+    daily_combo_cards_today = profile['daily_combo_cards_today']
     session=MySession()
     ip=session.set_proxy(proxy_url)
     profile_id=f'{profile_id}[{ip}]'
@@ -88,6 +102,8 @@ def exec(profile):
             elif task["id"] == "streak_days" and task["isCompleted"] == True:
                 print_message(f"#{profile_id} Daily Login Claimed===")
     
+    
+
     def click(available_tap):
         nonlocal balance
         # print_message("======")
@@ -164,23 +180,73 @@ def exec(profile):
             if remain_tap ==0:
                 break
     
-    def claim_daily_combo():
-        print_message(f"#{profile_id} =>Claming daily combo...")
+    def claim_daily_combo_reward():
+        print_message(f"#{profile_id} =>Claiming daily combo...")
         response_info  = session.exec_post(url_claim_daily_combo, headers=get_header(), data={})
         if response_info is not None:
             print_message(f"#{profile_id} Claimed daily combo success.")
+            return True
         else:
             print_message(f"#{profile_id} Claimed daily combo failed.")
+            return False
 
     def get_list_upgrade():
         print_message(f"#{profile_id} => Getting List Upgrade")
         response_info  = session.exec_post(url_ugrade_for_buy, headers=get_header(), data={})
         return response_info["upgradesForBuy"],response_info["dailyCombo"]
     
+    def buy_daily_combo_card():
+        if daily_combo_cards_today is None:
+            print_message(f"#{profile_id} Not found daily combo card in server...")
+            return False
+        
+        list_upgrade_cards,daily_combo = get_list_upgrade()
+        if daily_combo['isClaimed']:
+            print_message(f"#{profile_id} Claimed daily combo card")
+            return True
+
+        daily_combo_cards=[item for item in list_upgrade_cards if item['name'] in daily_combo_cards_today]
+        if len(daily_combo_cards)!=3:
+            print_message(f"#{profile_id} Combo card must 3 cards")
+            return True
+        is_available=True
+        for card in daily_combo_cards:
+            if card['isAvailable']==True and not card['isExpired']:
+                print_message(f"#{profile_id} Bought card {card['name']} failed because not Available/Expired")
+                is_available= False
+        if not is_available:
+            return False
+            
+        for card in daily_combo_cards:
+            if card['id'] in daily_combo['upgradeIds']:
+                print_message(f"#{profile_id} Bought card {card['name']}")
+            else:
+                if card['isAvailable']==True and not card['isExpired']:
+                    current_balance= round(user_data['clickerUser']['balanceCoins'],0)
+                    if current_balance>card['price']:
+                        response_info  = session.exec_post(url_buy_upgrade, headers=get_header(content_length="54"), data={
+                            "upgradeId": card['id'],
+                            "timestamp": int(time.time())
+                        })
+                        if response_info is not None: 
+                            print_message(f"#{profile_id} Buy daily card:Buy success {card['name']} with price {card['price']}") 
+                        else:
+                            print_message(f"#{profile_id} Buy daily card:Buy failed{card['name']} with price {card['price']}")
+                            return False 
+                    else:
+                        print_message(f"#{profile_id} Buy daily card:Buy failed{card['name']} with price {card['price']} because not enogh money")
+                else:
+                    print_message(f"#{profile_id} Bought card {card['name']} failed because not Available/Expired")
+                    return False
+        claim_daily_combo_reward()
+        return True
+    
     try:
-           
         user_data =  get_user_data()     
         claim_login()
+        is_continue=buy_daily_combo_card()
+        if not is_continue:
+            return
         available_tap=user_data['clickerUser']['availableTaps']
         looping_click(available_tap)
         time.sleep(5)
@@ -192,35 +258,6 @@ def exec(profile):
             user_data =  get_user_data()   
             current_balance= round(user_data['clickerUser']['balanceCoins'],0)
             list_upgrade_cards,daily_combo = get_list_upgrade()
-            if daily_combo['isClaimed']==False:
-                daily_combo_cards=[card for card in list_upgrade_cards if card['name'].replace("...","") in input_daily_combo_cards and card['id'] not in daily_combo['upgradeIds']]
-                if len(daily_combo_cards)==0 and len(input_daily_combo_cards)!=0:
-                    claim_daily_combo()
-                else:
-                    try:
-                        for card in daily_combo_cards:
-                            print_message(f"#{profile_id} Try buy card daily event:{card['name']}->> {card['price']}")
-                            if current_balance<card['price']:
-                                print_message(f"#{profile_id} Not enough money {current_balance} / {card['price']}")
-                                break
-                            elif card['isAvailable'] == False:
-                                print_message(f"#{profile_id} Card {card['name']} is not available")
-                                continue
-                                #If the combo card not available, process to buy other card.
-                            else:      
-                                response_info  = session.exec_post(url_buy_upgrade, headers=get_header(content_length="54"), data={
-                                    "upgradeId": card['id'],
-                                    "timestamp": int(time.time())
-                                })
-                                if response_info is not None: 
-                                    print_message(f"#{profile_id} Buy daily card:Buy success {picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}") 
-                                else:
-                                    print_message(f"#{profile_id} Buy daily card:Buy failed{picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}") 
-                                    
-                            sleep(3,6)
-                    except Exception as e:
-                        pass
-                        # break
 
             if current_balance<limit_buy_card:
                 print_message(f"#{profile_id} Current balance {current_balance} reach LIMIT_BUY_CARD {limit_buy_card}")
@@ -256,7 +293,7 @@ def exec(profile):
 
 def main(delay_time,count_processes=2):
     try:
-        
+        daily_combo_cards_today=get_daily_cards()
         df=pd.read_excel("account.xlsx",dtype={"token":str},sheet_name='hamster')
         df=df[(~df['token'].isna()) & (df['token']!='')]
         df.reset_index(inplace=True)
@@ -265,12 +302,8 @@ def main(delay_time,count_processes=2):
         if "proxy" not in df.columns:
             df["proxy"] = ""
         df['proxy']=df['proxy'].fillna('')
-        df['daily_specical_card']=df['daily_specical_card'].fillna('')
-        
-        daily_combo_cards=df['daily_specical_card'].fillna(value="").iat[0].split(";")
+     
         profiles=[]
-        
-        
         for idx,row in df.iterrows():
             profile={
                 "id":idx+1,
@@ -278,17 +311,17 @@ def main(delay_time,count_processes=2):
                 "list_upgrade":row['list_upgrade'],
                 "proxy_url":row['proxy'],
                 "limit_buy_card":row['limit_buy_card'],
-                "input_daily_combo_cards":daily_combo_cards
+                "daily_combo_cards_today":daily_combo_cards_today
             }
             profiles.append(profile)
-            # exec(profile)
+            
         if count_processes !=1:
             with Pool(count_processes) as p:
                 p.map(exec, profiles)
         else:
             for profile in profiles:
                 exec(profile)    
-        print_message(f"Sleeping {utils.read_config(section="HAMSTER",key= "delay_time_in_minute")} minutes...")
+        print_message(f'Sleeping {utils.read_config(section="HAMSTER",key= "delay_time_in_minute")} minutes...')
         time.sleep(int(utils.read_config(section="HAMSTER",key= "delay_time_in_minute")))
 
     except Exception as e:
