@@ -176,7 +176,7 @@ def exec(profile):
     def looping_click(available_tap):
         while True:
             remain_tap = click(available_tap)
-            sleep(2,4)
+            sleep(4,6)
             if remain_tap ==0:
                 break
     
