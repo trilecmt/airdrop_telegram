@@ -338,6 +338,6 @@ def main(delay_time,count_processes=2):
         print_message(traceback.format_exc())
 
 if __name__=='__main__':
-    count_processes=1#int(input("Enter number process:"))
+    count_processes=int(input("Enter number process:"))
     while True:        
         main(delay_time=60,count_processes=count_processes)                      
