@@ -112,7 +112,7 @@ def exec(profile):
         # print_message("======")
         try:
             response_data = session.exec_post(url_tap, headers=get_header(content_length="53"), data={
-                "count": random.randint(50, 100),
+                "count": random.randint(30, 50),
                 "availableTaps": available_tap,
                 "timestamp": int(time.time())
             })    
@@ -179,7 +179,7 @@ def exec(profile):
     def looping_click(available_tap):
         while True:
             remain_tap = click(available_tap)
-            sleep(2,3)
+            sleep(4,5)
             if remain_tap ==0:
                 break
     
@@ -212,13 +212,14 @@ def exec(profile):
         if len(daily_combo_cards)!=3:
             print_message(f"#{profile_id} Combo card must 3 cards")
             return True
-        is_available=True
-        for card in daily_combo_cards:
-            if card['isAvailable']==True and not card['isExpired']:
-                print_message(f"#{profile_id} Bought card {card['name']} failed because not Available/Expired")
-                is_available= False
-        if not is_available:
-            return False
+        # is_available=True
+        #Comment here becausse below checked Available and Expired already
+        # for card in daily_combo_cards:
+        #     if card['isAvailable']==False and card['isExpired'] == True:
+        #         print_message(f"#{profile_id} Bought card {card['name']} failed because not Available/Expired")
+        #         is_available= False
+        # if not is_available:
+        #     return True
             
         for card in daily_combo_cards:
             if card['id'] in daily_combo['upgradeIds']:
@@ -239,14 +240,19 @@ def exec(profile):
                             return False 
                     else:
                         print_message(f"#{profile_id} Buy daily card:Buy failed{card['name']} with price {format_number(card['price'])} because not enogh money")
+                        #break here to stack more money for the card
+                        return False
                 else:
                     print_message(f"#{profile_id} Bought card {card['name']} failed because not Available/Expired")
-                    return False
+                    #fix here to continue to buy card upgrade if the combo not ready
+                    return True
+                    
         claim_daily_combo_reward()
         return True
     
     try:
-        available_tap =  get_user_data()     
+        available_tap =  get_user_data()    
+        time.sleep(1) 
         claim_login()
         
         looping_click(available_tap)
