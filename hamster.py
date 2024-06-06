@@ -212,14 +212,14 @@ def exec(profile):
         if len(daily_combo_cards)!=3:
             print_message(f"#{profile_id} Combo card must 3 cards")
             return True
-        # is_available=True
-        #Comment here becausse below checked Available and Expired already
-        # for card in daily_combo_cards:
-        #     if card['isAvailable']==False and card['isExpired'] == True:
-        #         print_message(f"#{profile_id} Bought card {card['name']} failed because not Available/Expired")
-        #         is_available= False
-        # if not is_available:
-        #     return True
+        is_available=True
+        for card in daily_combo_cards:
+            if card['isAvailable']==False and card['isExpired'] == True:
+                print_message(f"#{profile_id} Bought card {card['name']} failed because not Available/Expired")
+                is_available= False
+        if not is_available:
+            #fix here to continue to buy card upgrade if the combo not ready
+            return True
             
         for card in daily_combo_cards:
             if card['id'] in daily_combo['upgradeIds']:
