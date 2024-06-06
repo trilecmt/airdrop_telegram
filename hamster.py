@@ -214,7 +214,7 @@ def exec(profile):
             return True
         is_available=True
         for card in daily_combo_cards:
-            if card['isAvailable']==False and card['isExpired'] == True:
+            if card['isAvailable']==False or card['isExpired']==True:
                 print_message(f"#{profile_id} Bought card {card['name']} failed because not Available/Expired")
                 is_available= False
         if not is_available:
@@ -338,6 +338,6 @@ def main(delay_time,count_processes=2):
         print_message(traceback.format_exc())
 
 if __name__=='__main__':
-    count_processes=int(input("Enter number process:"))
+    count_processes=1#int(input("Enter number process:"))
     while True:        
         main(delay_time=60,count_processes=count_processes)                      
