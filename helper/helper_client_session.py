@@ -42,52 +42,55 @@ class ClientSession:
 
             
     async def exec_post(self, url,headers, data): 
-        if self.proxy is None:
-            async with self._session.post(url, headers=headers, json=data) as r:
-                try:
-                    if r.status == 200:
-                        data = await r.json()
-                        return data
-                    else:
-                        return None
-                except aiohttp.ContentTypeError:
-                    return None
-        else:
-            async with self._session.post(url, headers=headers, json=data,proxy=self.proxy) as r:
-                try:
-                    if r.status == 200:
-                        data = await r.json()
-                        return data
-                    else:
-                        return None
-                except aiohttp.ContentTypeError:
-                    return None
+        for i in range(5):
+            if self.proxy is None:
+                async with self._session.post(url, headers=headers, json=data) as r:
+                    try:
+                        if r.status == 200:
+                            data = await r.json()
+                            return data
+                        else:
+                            pass
+                    except aiohttp.ContentTypeError:
+                        pass
+            else:
+                async with self._session.post(url, headers=headers, json=data,proxy=self.proxy) as r:
+                    try:
+                        if r.status == 200:
+                            data = await r.json()
+                            return data
+                        else:
+                            pass
+                    except aiohttp.ContentTypeError:
+                        pass
+                        
           
    
     async def exec_get(self, url,headers): 
-        try:
-            if self.proxy is None:
-                async with self._session.get(url, headers=headers) as r:
-                    try:
-                        if r.status == 200:
-                            data = await r.json()
-                            return data
-                        else:
-                            return None
-                    except aiohttp.ContentTypeError:
-                        return None
-            else:
-                async with self._session.get(url, headers=headers,proxy=self.proxy) as r:
-                    try:
-                        if r.status == 200:
-                            data = await r.json()
-                            return data
-                        else:
-                            return None
-                    except aiohttp.ContentTypeError:
-                        return None
-        except Exception as e:
-            print_message(e)
-                
+        for i in range(5):
+            try:
+                if self.proxy is None:
+                    async with self._session.get(url, headers=headers) as r:
+                        try:
+                            if r.status == 200:
+                                data = await r.json()
+                                return data
+                            else:
+                                pass
+                        except aiohttp.ContentTypeError:
+                            pass
+                else:
+                    async with self._session.get(url, headers=headers,proxy=self.proxy) as r:
+                        try:
+                            if r.status == 200:
+                                data = await r.json()
+                                return data
+                            else:
+                                pass
+                        except aiohttp.ContentTypeError:
+                            pass
+            except Exception as e:
+                print_message(e)
+                    
    
 
