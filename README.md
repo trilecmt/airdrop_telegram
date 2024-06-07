@@ -8,13 +8,13 @@
 https://www.python.org/downloads/
 
 2. Cài đặt thư viện
-pip install requirements.txt
+pip install -r requirements.txt
 
-3. Tạo account/url/key theo template file account-template.xlsx lưu thành file account.xlsx
+4. Tạo account/url/key theo template file account-template.xlsx lưu thành file account.xlsx
 
-4. Cài đặt genlogin và đăng ký.
+5. Cài đặt genlogin và đăng ký.
 
-5. Tạo profile trên genlogin
+6. Tạo profile trên genlogin
 - Tạo profile tên MEMEFI để chạy game MEMEFI
 - Tạo profile tên OCEAN để chạy game OCEAN
 
