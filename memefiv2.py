@@ -35,7 +35,7 @@ def create_payload_login(query):
                 "checkDataString": f"auth_date={auth_date}\nquery_id={query_id}\nuser={unquote(user_data)}",
                 "user": {
                     "id": user_data_dict["id"],
-                    "allows_write_to_pm": user_data_dict["allows_write_to_pm"],
+                    "allows_write_to_pm": user_data_dict.get("allows_write_to_pm",True),
                     "first_name": user_data_dict["first_name"],
                     "last_name": user_data_dict["last_name"],
                     "username": user_data_dict.get("username", "Username không được đặt"),
