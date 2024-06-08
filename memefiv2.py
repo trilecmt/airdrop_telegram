@@ -86,7 +86,7 @@ async def exec(profile):
             header['Authorization']= f'Bearer {access_token}'
 
             json_response=await session.exec_post(url, headers=header, data=payload)
-            print_message(f'#{profile_id} Id:{json_response['data']['telegramUserMe']['telegramId']}')    
+            print_message(f"#{profile_id} Id:{json_response['data']['telegramUserMe']['telegramId']}")    
             current_energy = 0 
             max_energy = 0
             time_att = 1
