@@ -13,7 +13,7 @@ import traceback
 import sys
 import argparse  
 import  helper.utils as utils
-
+import requests
 
 url_get_info = "https://api.hamsterkombat.io/clicker/sync"    
 url_boost = "https://api.hamsterkombat.io/clicker/boosts-for-buy"
@@ -24,7 +24,7 @@ url_buy_upgrade = "https://api.hamsterkombat.io/clicker/buy-upgrade"
 url_claim_daily_combo="https://api.hamsterkombat.io/clicker/claim-daily-combo"
 url_check_task = "https://api.hamsterkombat.io/clicker/list-tasks"
 url_check_in = "https://api.hamsterkombat.io/clicker/check-task"
-import requests
+url_claim_daily_cipher = "https://api.hamsterkombat.io/clicker/claim-daily-cipher"
 
 def get_daily_cards():
     url = 'https://raw.githubusercontent.com/trilecmt/airdrop_telegram/main/resources/hamster_daily_cards.json'
@@ -35,9 +35,10 @@ def get_daily_cards():
         now-=datetime.timedelta(days=1)
     _data=[item for item in data if item['date']==now.strftime("%Y%m%d")]
     if len(_data)==0:
-        return None
+        return None,None
    
-    return _data[0]["cards"]
+    return _data[0]["cards"],_data[0].get("cipher","TON")
+
 
 def exec(profile):
     profile_id=profile['id']
@@ -46,6 +47,7 @@ def exec(profile):
     proxy_url = profile['proxy_url']
     limit_buy_card = profile['limit_buy_card']
     daily_combo_cards_today = profile['daily_combo_cards_today']
+    cipher=profile['cipher']
     session=MySession()
     ip=session.set_proxy(proxy_url)
     profile_id=f'{profile_id}[{ip}]'
@@ -198,6 +200,20 @@ def exec(profile):
         response_info  = session.exec_post(url_ugrade_for_buy, headers=get_header(), data={})
         return response_info["upgradesForBuy"],response_info["dailyCombo"]
     
+    def claim_daily_cipher(cipher:str):
+        if cipher is not None and cipher!="":
+            try:
+                print_message(f"#{profile_id} => Claim Daily Cipher {cipher}")
+                response_info  = session.exec_post(url_claim_daily_cipher, headers=get_header(), data={
+                    "cipher": cipher
+                })
+                if response_info is not None:
+                    print_message(f"#{profile_id} => Claimed Daily Cipher {cipher} success")
+                else:
+                    print_message(f"#{profile_id} => Claimed Daily Cipher {cipher} failed")
+            except Exception as e:
+                pass
+
     def buy_daily_combo_card():
         if daily_combo_cards_today is None:
             print_message(f"#{profile_id} Not found daily combo card in server...")
@@ -254,7 +270,7 @@ def exec(profile):
         available_tap =  get_user_data()    
         time.sleep(1) 
         claim_login()
-        
+        claim_daily_cipher(cipher=cipher)
         looping_click(available_tap)
         time.sleep(2)
         available_tap = get_boost()
@@ -303,7 +319,7 @@ def exec(profile):
 
 def main(delay_time,count_processes=2):
     try:
-        daily_combo_cards_today=get_daily_cards()
+        daily_combo_cards_today,cipher=get_daily_cards()
         df=pd.read_excel("account.xlsx",dtype={"token":str},sheet_name='hamster')
         df=df[(~df['token'].isna()) & (df['token']!='')]
         df.reset_index(inplace=True)
@@ -321,7 +337,8 @@ def main(delay_time,count_processes=2):
                 "list_upgrade":row['list_upgrade'],
                 "proxy_url":row['proxy'],
                 "limit_buy_card":row['limit_buy_card'],
-                "daily_combo_cards_today":daily_combo_cards_today
+                "daily_combo_cards_today":daily_combo_cards_today,
+                "cipher":cipher
             }
             profiles.append(profile)
             
