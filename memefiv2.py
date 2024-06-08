@@ -66,7 +66,16 @@ async def exec(profile):
                 print_message(f"#{profile_id} New IP:{response['origin']}")
 
             json_response=await session.exec_post(url, headers=header, data=create_payload_login(query))
+
+
             print_message(f"#{profile_id} {json_response}")
+            if "errors" in json_response:
+                error=json_response["errors"][0]["message"]
+                f = open("log_error.txt", "a")
+                f.write(f'\n{str(profile_id)}-{error}')
+                f.close()
+                return
+            
             access_token = json_response['data']['telegramUserLogin']['access_token']
             payload = {
                 "operationName": "QueryTelegramUserMe",
@@ -316,7 +325,7 @@ async def main(count_process):
     await asyncio.gather(*tasks)
 
 if __name__=="__main__":
-    count_process=int(input("Enter count process:"))
+    count_process=1#int(input("Enter count process:"))
     while True:
         asyncio.run(main(count_process))
         time.sleep(60)
