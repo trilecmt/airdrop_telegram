@@ -289,7 +289,8 @@ async def limited_exec(semaphore, profile):
     async with semaphore:
         await exec(profile)
 
-async def main():
+async def main(count_process):
+    
     df=pd.read_excel("account.xlsx",dtype={"query":str},sheet_name='memefi')
     df=df[(~df['query'].isna()) & (df['query']!='')]
     if "proxy" not in df.columns:
@@ -304,14 +305,15 @@ async def main():
             "proxy":row["proxy"]
         }
         profiles.append(profile)
-        await exec(profile)
-    # semaphore = asyncio.Semaphore(5)  # Limit to 5 concurrent tasks
-    # tasks = [limited_exec(semaphore, profile) for profile in profiles]
-    # await asyncio.gather(*tasks)
+        # await exec(profile)
+    semaphore = asyncio.Semaphore(count_process)  # Limit to 5 concurrent tasks
+    tasks = [limited_exec(semaphore, profile) for profile in profiles]
+    await asyncio.gather(*tasks)
 
 if __name__=="__main__":
+    count_process=int(input("Enter count process:"))
     while True:
-        asyncio.run(main())
+        asyncio.run(main(count_process))
         time.sleep(60)
 
 # def main(delay_time):
