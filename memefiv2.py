@@ -66,6 +66,7 @@ async def exec(profile):
             print_message(f"#{profile_id} New IP:{response['origin']}")
 
         json_response=await session.exec_post(url, headers=header, data=create_payload_login(query))
+        print_message(f"#{profile_id} {json_response}")
         access_token = json_response['data']['telegramUserLogin']['access_token']
         payload = {
             "operationName": "QueryTelegramUserMe",
