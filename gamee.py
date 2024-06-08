@@ -77,6 +77,7 @@ def exec(profile_url, proxy_url:str):
         if mining_ended:
             print_message("===Mining Session Ended===")
             print_message("===Claiming==")
+            sleep(2)  
             payload = {
                 "id": "miningEvent.startSession",
                 "jsonrpc": "2.0",
