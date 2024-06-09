@@ -28,41 +28,41 @@ class MySession(requests.Session):
                     port=proxy_url.split(":")[1]
                     proxy_url=f'http://{username}:{password}@{host}:{port}'
             self.proxies= {'http':proxy_url,'https':proxy_url}
-            print_message(f'Changed proxy success==> success')      
-        else:
-            print("Countinue without proxy.")
+            # print_message(f'Changed proxy success==> success')      
+
             
         if is_test_after_change:
-                print_message("Checking new IP...")
+                # print_message("Checking new IP...")
                 response = self.exec_get(url="https://api.myip.com/",headers={"content-type": "application/json"})
-                if response is None:
-                    print_message(f"Get new IP Failed")
-                else:
-                    print_message(f"New IP:{response['ip']}")
+                if response is not None:
                     return response['ip']
-                
-    def exec_post(self,url, headers, data,retry_count=1):
+             
+    def exec_post(self,url, headers, data,retry_count=1,log=False,is_convert_dump_json=True):
+        if is_convert_dump_json:
+            data=json.dumps(data)
         for i in range(retry_count):
             try:
-                response_info  = self.post(url, headers=headers, data=json.dumps(data))
+                response_info  = self.post(url, headers=headers, data=data)
                 if response_info.status_code  in [200,201]:   
                     return json.loads(response_info.text)
-                print_message(f"StatusCode: {response_info.status_code}")
-                print_message(f"Response text: {response_info.text}")
-                print_message("Error: Couldn't fetch user data")
+                if log:
+                    print_message(f"StatusCode: {response_info.status_code}")
+                    print_message(f"Response text: {response_info.text}")
+                    print_message("Error: Couldn't fetch user data")
                 time.sleep(2)
             except Exception as e:
                 print_message(e)
         
-    def exec_get(self,url, headers,retry_count=1):
+    def exec_get(self,url, headers,retry_count=1,log=False):
         for i in range(retry_count):
             try:
                 response_info  = self.get(url, headers=headers)
                 if response_info.status_code in [200,201]:    
                     return json.loads(response_info.text)
-                print_message(f"StatusCode: {response_info.status_code}")
-                print_message(f"Response text: {response_info.text}")
-                print_message("Error: Couldn't fetch user data")
+                if log:
+                    print_message(f"StatusCode: {response_info.status_code}")
+                    print_message(f"Response text: {response_info.text}")
+                    print_message("Error: Couldn't fetch user data")
                 time.sleep(2)
             except Exception as e:
                 print_message(e)
