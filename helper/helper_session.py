@@ -41,29 +41,31 @@ class MySession(requests.Session):
                     print_message(f"New IP:{response['ip']}")
                     return response['ip']
                 
-    def exec_post(self,url, headers, data):
-        try:
-            response_info  = self.post(url, headers=headers, data=json.dumps(data))
-            if response_info.status_code not in [200,201]:
+    def exec_post(self,url, headers, data,retry_count=1):
+        for i in range(retry_count):
+            try:
+                response_info  = self.post(url, headers=headers, data=json.dumps(data))
+                if response_info.status_code  in [200,201]:   
+                    return json.loads(response_info.text)
                 print_message(f"StatusCode: {response_info.status_code}")
                 print_message(f"Response text: {response_info.text}")
                 print_message("Error: Couldn't fetch user data")
-                return None
-            return json.loads(response_info.text)
-        except Exception as e:
-            print_message(e)
+                time.sleep(2)
+            except Exception as e:
+                print_message(e)
         
-    def exec_get(self,url, headers):
-        try:
-            response_info  = self.get(url, headers=headers)
-            if response_info.status_code != 200:
+    def exec_get(self,url, headers,retry_count=1):
+        for i in range(retry_count):
+            try:
+                response_info  = self.get(url, headers=headers)
+                if response_info.status_code in [200,201]:    
+                    return json.loads(response_info.text)
                 print_message(f"StatusCode: {response_info.status_code}")
                 print_message(f"Response text: {response_info.text}")
                 print_message("Error: Couldn't fetch user data")
-                return None
-            return json.loads(response_info.text)
-        except Exception as e:
-            print_message(e)
+                time.sleep(2)
+            except Exception as e:
+                print_message(e)
 
 
     def exec_exec(self,url, headers,method:str='GET',data=None):
