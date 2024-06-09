@@ -15,6 +15,7 @@ import argparse
 import  helper.utils as utils
 import requests
 
+url_config = "https://api.hamsterkombat.io/clicker/config"
 url_get_info = "https://api.hamsterkombat.io/clicker/sync"    
 url_boost = "https://api.hamsterkombat.io/clicker/boosts-for-buy"
 url_tap = "https://api.hamsterkombat.io/clicker/tap"
@@ -37,7 +38,7 @@ def get_daily_cards():
     if len(_data)==0:
         return None,None
    
-    return _data[0]["cards"],_data[0].get("cipher","TON")
+    return _data[0]["cards"],_data[0].get("cipher","")
 
 
 def exec(profile):
@@ -199,16 +200,23 @@ def exec(profile):
         list_upgrade_cards = response_info["upgradesForBuy"]
         return response_info["upgradesForBuy"],response_info["dailyCombo"]
     
+    def check_claimed_cipher():
+        response_info  = session.exec_post(url_config, headers=get_header(), data={})
+        return response_info["dailyCipher"]["isClaimed"]
+    
     def claim_daily_cipher(cipher:str):
         if cipher is not None and cipher!="":
             try:
-                response_info  = session.exec_post(url_claim_daily_cipher, headers=get_header(), data={
-                    "cipher": cipher
-                })
-                if response_info is not None:
-                    print_message(f"#✅{profile_id} => Claimed Daily Cipher {cipher} success")
+                if not check_claimed_cipher():                    
+                    response_info  = session.exec_post(url_claim_daily_cipher, headers=get_header(), data={
+                        "cipher": cipher
+                    })
+                    if response_info is not None:
+                        print_message(f"✅#{profile_id} => Claimed Daily Cipher {cipher} success")
+                    else:
+                        print_message(f"❌#{profile_id} => Claimed Daily Cipher {cipher} failed")
                 else:
-                    print_message(f"❌ #{profile_id} => Claimed Daily Cipher {cipher} failed")
+                    print_message(f"✅#{profile_id} => Daily Cipher already claimed")
             except Exception as e:
                 pass
     
