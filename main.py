@@ -2,7 +2,8 @@ import hamster
 import cexp
 import time
 import memefiv2
-
+import gamee
+import asyncio
 
 def main():
     pass
@@ -16,7 +17,10 @@ if __name__=="__main__":
         cexp.main(delay_time=10)
         
         print("*****PROCESS MEMEFI****")
-        memefiv2.main(delay_time=10)
+        asyncio.run(memefiv2.main(count_process= 1))
+        
+        print("*****PROCESS GAMEE****")
+        gamee.main(delay_time=10)
         
         print("*****SLEEP***")
         time.sleep(10*60)
