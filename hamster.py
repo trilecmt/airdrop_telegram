@@ -31,7 +31,7 @@ def get_daily_cards():
     f = requests.get(url)
     data = f.json()
     now=(datetime.datetime.utcnow()+datetime.timedelta(hours=7))
-    if now.hour<=19:
+    if now.hour<19:
         now-=datetime.timedelta(days=1)
     _data=[item for item in data if item['date']==now.strftime("%Y%m%d")]
     if len(_data)==0:
@@ -293,7 +293,7 @@ def exec(profile):
                     print_message(f"❌ #{profile_id} Bought card {card['name']} failed because not Available/Expired")
                     #fix here to continue to buy card upgrade if the combo not ready
                     return True
-                    
+        sleep(2)            
         claim_daily_combo_reward()
         return True
     
