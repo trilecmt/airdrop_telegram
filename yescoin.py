@@ -89,7 +89,7 @@ async def main(count_process):
     await asyncio.gather(*tasks)
 
 if __name__=="__main__":
-    count_process=1#int(input("Enter count process:"))
+    count_process=int(input("Enter count process:"))
     while True:
         asyncio.run(main(count_process))
         time.sleep(10)
