@@ -41,30 +41,6 @@ class MySession(requests.Session):
                     print_message(f"New IP:{response['ip']}")
                     return response['ip']
                 
-<<<<<<< HEAD
-    def exec_post(self,url, headers, data):
-        try:
-            response_info  = self.post(url, headers=headers, data=json.dumps(data))
-            if response_info.status_code == 500:
-                count = 0                
-                while True:
-                    time.sleep(3)
-                    print_message(f"StatusCode: {response_info.status_code}")
-                    response_info  = self.post(url, headers=headers, data=json.dumps(data))
-                    count +=1
-                    if response_info.status_code in [200,201]:
-                        break
-                    if count > 5:
-                        break
-            elif response_info.status_code not in [200,201,500]:
-                print_message(f"StatusCode: {response_info.status_code}")
-                print_message(f"Response text: {response_info.text}")
-                print_message("Error: Couldn't fetch user data")
-                return json.loads(response_info.text)     
-            return json.loads(response_info.text)
-        except Exception as e:
-            print_message(e)
-=======
     def exec_post(self,url, headers, data,retry_count=1):
         for i in range(retry_count):
             try:
@@ -77,7 +53,6 @@ class MySession(requests.Session):
                 time.sleep(2)
             except Exception as e:
                 print_message(e)
->>>>>>> main
         
     def exec_get(self,url, headers,retry_count=1):
         for i in range(retry_count):
