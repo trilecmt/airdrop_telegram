@@ -39,7 +39,7 @@ class ClientSession:
             await self._session.close()
 
             
-    async def exec_post(self, url,headers, data,retry_count=1): 
+    async def exec_post(self, url,headers, data,retry_count=1,log=False): 
         for i in range(retry_count):
             if self.proxy is None:
                 async with self._session.post(url, headers=headers, json=data) as r:
@@ -48,7 +48,9 @@ class ClientSession:
                             data = await r.json()
                             return data
                         else:
-                            pass
+                            if log:
+                                print_message(f'Status: {r.status}')
+                                print_message(f'Status: {r.text}')
                     except aiohttp.ContentTypeError:
                         pass
             else:
@@ -58,13 +60,15 @@ class ClientSession:
                             data = await r.json()
                             return data
                         else:
-                            pass
+                            if log:
+                                print_message(f'Status: {r.status}')
+                                print_message(f'Status: {r.text}')
                     except aiohttp.ContentTypeError:
                         pass
                         
           
    
-    async def exec_get(self, url,headers,retry_count=1): 
+    async def exec_get(self, url,headers,retry_count=1,log=False): 
         for i in range(retry_count):
             try:
                 if self.proxy is None:

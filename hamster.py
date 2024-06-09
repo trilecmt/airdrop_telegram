@@ -115,7 +115,7 @@ def exec(profile):
                 "count": random.randint(30, 50),
                 "availableTaps": available_tap,
                 "timestamp": int(time.time())
-            })    
+            },log=True)    
             if response_data is not None:    
                 avai_tap = response_data['clickerUser']['availableTaps']
                 balance = round(response_data['clickerUser']['balanceCoins'],0)     
@@ -214,16 +214,16 @@ def exec(profile):
     
     def buy_conditions_cards(card_name: str, condtion: dict):
         if condtion["_type"] == "ReferralCount":
-            print_message(f"#{profile_id} {card_name} need number of Ref: {condtion['referralCount']} ...")
+            print_message(f"❌ #{profile_id} {card_name} need number of Ref: {condtion['referralCount']} ...")
             return False
         if condtion["_type"] == "MoreReferralsCount":
-            print_message(f"#{profile_id} {card_name} need more Ref: {condtion['moreReferralsCount']} ...")
+            print_message(f"❌ #{profile_id} {card_name} need more Ref: {condtion['moreReferralsCount']} ...")
             return False
         if condtion["_type"] == "ByUpgrade":
             condition_card = [item for item in list_upgrade_cards if item['id'] == condtion["upgradeId"]][0]
             print_message(f"#{profile_id} {card_name} need {condition_card['name']} with level {condition_card['level']} ...")
             if condition_card['isExpired']==True:
-                print_message(f"#{profile_id} Bought card {condition_card['name']} failed due to Expired")
+                print_message(f"❌ #{profile_id} Bought card {condition_card['name']} failed due to Expired")
                 return False
             if condition_card['isAvailable']==True:
                 while condition_card["level"] < condtion["level"]:
@@ -231,14 +231,13 @@ def exec(profile):
                     if balance > condition_card['price']:
                         response_info = buy_card(condition_card['id']) 
                         sleep(2)
-                        print_message(f"#{profile_id} Buy condition card {condition_card['name']} level {condition_card['level']} success with price {format_number( condition_card['price'])}")
+                        print_message(f"#❌ {profile_id} Buy condition card {condition_card['name']} level {condition_card['level']} success with price {format_number( condition_card['price'])}")
                         condition_card = [item for item in list_upgrade_cards if item['id'] == condtion["upgradeId"]][0] #get new level of condition card in the loop
                     else:
-                        print_message(f"#{profile_id} Buy condition card {condition_card['name']} level {condition_card['level']} failed because not enough money: price {format_number( condition_card['price'])}")
+                        print_message(f"❌ #{profile_id} Buy condition card {condition_card['name']} level {condition_card['level']} failed because not enough money: price {format_number( condition_card['price'])}")
                         return False
                 return True
             if condition_card['isAvailable']==False:
-                print_message(f"#{profile_id} {condition_card['name']} is not available, checking conditions...")
                 result = buy_conditions_cards(condition_card['name'], condition_card['condition'])
                 return result
     
@@ -262,7 +261,6 @@ def exec(profile):
                 print_message(f"❌ #{profile_id} Bought card {card['name']} failed because not Available/Expired")
                 is_available= False
             if card['isAvailable']==False:
-                print_message(f"#{profile_id} {card['name']} is not available, checking conditions...")
                 is_available = buy_conditions_cards(card['name'], card['condition'])                
         if not is_available:
             #fix here to continue to buy card upgrade if the combo not ready
