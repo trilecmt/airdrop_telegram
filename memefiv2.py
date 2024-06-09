@@ -53,7 +53,7 @@ async def exec(profile):
     profile_id=profile['id']
     try:
         query=profile['query']
-        print_message(f'#{profile_id} {query}')
+        # print_message(f'#{profile_id} {query}')
         header = {'Accept': 'application/json', 'Accept-Language': 'en-US,en;q=0.9', 'Content-Type': 'application/json', 'Origin': 'https://tg-app.memefi.club', 'Referer': 'https://tg-app.memefi.club/', 'Sec-Ch-Ua': '"Google Chrome";v="123", "Not:A-Brand";v="8", "Chromium";v="123"', 'Sec-Ch-Ua-mobile': '?1', 'Sec-Ch-Ua-platform': '"Android"', 'Sec-Fetch-Dest': 'empty', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'same-site', 'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36'}
         from helper.helper_client_session import ClientSession
         async with ClientSession(proxy_url=profile['proxy']) as session:
@@ -68,7 +68,7 @@ async def exec(profile):
             json_response=await session.exec_post(url, headers=header, data=create_payload_login(query))
 
 
-            print_message(f"#{profile_id} {json_response}")
+            # print_message(f"#{profile_id} {json_response}")
             if "errors" in json_response:
                 error=json_response["errors"][0]["message"]
                 f = open("log_error.txt", "a")

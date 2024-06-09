@@ -34,3 +34,10 @@ def sleep(min,max=None):
         time.sleep(min)
     else:
         time.sleep(get_random(min,max))
+
+def get_query_id (url:str):
+    import urllib.parse
+    parsed_url = urllib.parse.urlparse(url)
+    query_string = parsed_url.fragment
+    query_params = urllib.parse.parse_qs(query_string)
+    return query_params['tgWebAppData'][0]

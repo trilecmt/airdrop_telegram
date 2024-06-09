@@ -1,5 +1,10 @@
 [
     {
+        "date":"20240609",
+        "cards": ["X","DAO","Trading bots"]
+    }
+    ,
+    {
         "date":"20240608",
         "cards": ["Defi2.0 tokens","P2P trading","Hamster Kombat merch"],
         "cipher":"WALLET"
