@@ -2,7 +2,7 @@
     {
         "date":"20240609",
         "cards": ["X","DAO","Trading bots"],
-        "cipher":""
+        "cipher":"WEB3"
     },
     {
         "date":"20240608",
@@ -13,6 +13,11 @@
     "date":"20240607",
     "cards": ["QA team","Meme coins","Licence Japan"],
     "cipher":"TON"
+},
+{
+    "date":"20240606",
+    "cards": ["X","DAO","Trading bots"],
+    "cipher":"WALLET"
 }
 ]
 
