@@ -359,7 +359,7 @@ if __name__=="__main__":
             print(f"\r\n\n{Fore.GREEN+Style.BRIGHT}Làm mới token...", end="", flush=True)
             
             for __second in range(second_sleep, 0, -1):
-                sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{giây // 60} phút {Fore.WHITE}{__second % 60} giây")
+                sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
                 sys.stdout.flush()
                 time.sleep(1)
             sys.stdout.write("\rĐã đến thời gian nhận tiếp theo!\n")
