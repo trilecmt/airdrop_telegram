@@ -91,6 +91,12 @@ async def main(count_process):
 if __name__=="__main__":
     count_process=int(input("Enter count process:"))
     while True:
-        asyncio.run(main(count_process))
+        loop = asyncio.get_event_loop()
+        try:
+            loop.run_until_complete(main(count_process))
+        except KeyboardInterrupt:
+            break  # Exit the loop on Ctrl+C
+        finally:
+            loop.close()
         time.sleep(10)
 
