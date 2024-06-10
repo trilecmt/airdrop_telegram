@@ -6,6 +6,7 @@ import sys
 import json
 from helper.helper_session import MySession
 import pandas as pd
+import traceback
 
 from helper.utils import print_message
 
@@ -333,29 +334,34 @@ def exec(profile):
                 break
 
 
-while True:
-    df=pd.read_excel("account.xlsx",dtype={"query":str},sheet_name='blum')
-    df=df[(~df['query'].isna()) & (df['query']!='')]
-    if "proxy" not in df.columns:
-            df["proxy"] = ""
-    df['proxy']=df['proxy'].fillna('')
-    
-    profiles=[]
-    for idx,row in df.iterrows():
-        profile={
-            "id":idx+1,
-            "query":row["query"],
-            "proxy":row["proxy"]
-        }
-        profiles.append(profile)
-        exec(profile)
-        
-    print(f"\n{Fore.GREEN+Style.BRIGHT}========={Fore.WHITE+Style.BRIGHT}Tất cả tài khoản đã được xử lý thành công{Fore.GREEN+Style.BRIGHT}=========", end="", flush=True)
-    print(f"\r\n\n{Fore.GREEN+Style.BRIGHT}Làm mới token...", end="", flush=True)
-    
-    thời_gian_chờ = 30 
-    for giây in range(thời_gian_chờ, 0, -1):
-        sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{giây // 60} phút {Fore.WHITE}{giây % 60} giây")
-        sys.stdout.flush()
-        time.sleep(1)
-    sys.stdout.write("\rĐã đến thời gian nhận tiếp theo!\n")
+if __name__=="__main__":
+    second_sleep=int(input("Second sleep after finish a round:"))
+    while True:
+        try:
+            
+            df=pd.read_excel("account.xlsx",dtype={"query":str},sheet_name='blum')
+            df=df[(~df['query'].isna()) & (df['query']!='')]
+            if "proxy" not in df.columns:
+                    df["proxy"] = ""
+            df['proxy']=df['proxy'].fillna('')
+            
+            profiles=[]
+            for idx,row in df.iterrows():
+                profile={
+                    "id":idx+1,
+                    "query":row["query"],
+                    "proxy":row["proxy"]
+                }
+                profiles.append(profile)
+                exec(profile)
+                
+            print(f"\n{Fore.GREEN+Style.BRIGHT}========={Fore.WHITE+Style.BRIGHT}Tất cả tài khoản đã được xử lý thành công{Fore.GREEN+Style.BRIGHT}=========", end="", flush=True)
+            print(f"\r\n\n{Fore.GREEN+Style.BRIGHT}Làm mới token...", end="", flush=True)
+            
+            for __second in range(second_sleep, 0, -1):
+                sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{giây // 60} phút {Fore.WHITE}{giây % 60} giây")
+                sys.stdout.flush()
+                time.sleep(1)
+            sys.stdout.write("\rĐã đến thời gian nhận tiếp theo!\n")
+        except Exception as e:    
+            print_message(traceback.format_exc())
