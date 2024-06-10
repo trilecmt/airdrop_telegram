@@ -2,7 +2,7 @@ import asyncio
 import time
 import pandas as pd
 import traceback
-from helper.utils import print_message, sleep, format_number
+from helper.utils import print_message, sleep, format_number, get_query_id
 from datetime import datetime, timedelta
 from helper.helper_session import MySession
 
@@ -45,7 +45,7 @@ async def exec(profile):
                     return print_message(f"❌ #{profile_id} Start farm failed.Move next...")  
                 print_message(f"✅ #{profile_id} Claim farm and restart success.Move next...")          
             
-            response=session.exec_post(f'{URL}/auth/validate-init', headers=headers, data=profile['query'],is_convert_dump_json=False)
+            response=session.exec_post(f'{URL}/auth/validate-init', headers=headers, data=get_query_id(profile['query']),is_convert_dump_json=False)
             if response is None:
                 return print_message(f"❌ #{profile_id} Auth failed.Move next...")    
             headers['Authorization']="Bearer "+response['token']

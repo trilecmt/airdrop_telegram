@@ -37,7 +37,7 @@ class MySession(requests.Session):
                 if response is not None:
                     return response['ip']
              
-    def exec_post(self,url, headers, data,retry_count=1,log=False,is_convert_dump_json=True):
+    def exec_post(self,url, headers, data,retry_count=1,log=True,is_convert_dump_json=True):
         if is_convert_dump_json:
             data=json.dumps(data)
         for i in range(retry_count):

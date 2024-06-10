@@ -84,12 +84,12 @@ def exec(profile):
         available_tap = response_info['clickerUser']['availableTaps']
         balance = round(response_info['clickerUser']['balanceCoins'],0)     
         # print_message("---")
-        # print_message(f"#{profile_id} User Id: {response_info['clickerUser']['id']}")
-        # print_message(f"#{profile_id} Current Level: {response_info['clickerUser']['level']}")
+        print_message(f"#{profile_id} User Id: {response_info['clickerUser']['id']}")
+        print_message(f"#{profile_id} Current Level: {response_info['clickerUser']['level']}")
         # print_message(f"#{profile_id} Current Balance: {format_number(balance)}")
         # print_message(f"#{profile_id} Available Tap Sync: {format_number(available_tap)}")
         # print_message(f"#{profile_id} Earn per Tap: {response_info['clickerUser']['earnPerTap']}")
-        # print_message(f"#{profile_id} Earn per Hour: {format_number(response_info['clickerUser']['earnPassivePerHour'])}")
+        print_message(f"#{profile_id} Earn per Hour: {format_number(response_info['clickerUser']['earnPassivePerHour'])}")
         return available_tap
     
     def claim_login():
