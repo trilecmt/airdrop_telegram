@@ -1,15 +1,14 @@
 from requests.structures import CaseInsensitiveDict
 import time
 import datetime
-from colorama import init, Fore, Style
 import sys
 import json
 from helper.helper_session import MySession
 import pandas as pd
 import traceback
-
 from helper.utils import print_message
 
+from colorama import init, Fore, Style
 init(autoreset=True)
 
 
