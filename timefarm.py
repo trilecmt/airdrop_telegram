@@ -61,7 +61,7 @@ async def exec(profile):
                 return start_farm()      
             claim_time=datetime.strptime(response['activeFarmingStartedAt'], "%Y-%m-%dT%H:%M:%S.%fZ")+ timedelta(seconds=response['farmingDurationInSec'])+timedelta(hours=7)
             if claim_time>(datetime.utcnow()+timedelta(hours=7)):
-                return print_message(f"❌ #{profile_id} Next claim at {claim_time}.Move next...")      
+                return print_message(f"❌ #{profile_id} Next claim at {claim_time+timedelta(hours=7)}.Move next...")      
             else:
                 claim()
             
