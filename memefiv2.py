@@ -233,7 +233,7 @@ async def exec(profile):
             
             async def attack(last_id: str):
                 nonlocal time_att        
-                count_tap = random.randint(5, 40)
+                count_tap = random.randint(40, 120)
                 if count_tap * att_dmg > current_energy:
                     count_tap = round(current_energy/att_dmg)-1
                 payload = {
