@@ -61,7 +61,7 @@ async def exec(profile):
                 return start_farm()      
             claim_time=datetime.strptime(response['activeFarmingStartedAt'], "%Y-%m-%dT%H:%M:%S.%fZ")+ timedelta(seconds=response['farmingDurationInSec'])+timedelta(hours=7)
             if claim_time>(datetime.utcnow()+timedelta(hours=7)):
-                return print_message(f"❌ #{profile_id} Next claim at {claim_time+timedelta(hours=7)}.Move next...")      
+                return print_message(f"❌ #{profile_id} Next claim at {claim_time}.Move next...")      
             else:
                 claim()
             
@@ -97,14 +97,14 @@ async def main(count_process):
     await asyncio.gather(*tasks)
 
 if __name__=="__main__":
-    delay_time=int(input("Enter delay time(second):"))
-    count_process=int(input("Enter count process:"))
+    delay_time=int(input("Enter delay time(minute)(recommend 246):"))
+    count_process=int(input("Enter #CPU:"))
     while True:
         asyncio.run(main(count_process))
         print(f"\n{Fore.GREEN+Style.BRIGHT}========={Fore.WHITE+Style.BRIGHT}Tất cả tài khoản đã được xử lý thành công{Fore.GREEN+Style.BRIGHT}=========", end="", flush=True)
         print(f"\r\n\n{Fore.GREEN+Style.BRIGHT}Làm mới token...", end="", flush=True)
         
-        for __second in range(delay_time, 0, -1):
+        for __second in range(delay_time*60, 0, -1):
             sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
             sys.stdout.flush()
             time.sleep(1)
