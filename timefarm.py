@@ -1,10 +1,13 @@
 import asyncio
+import sys
 import time
 import pandas as pd
 import traceback
 from helper.utils import print_message, sleep, format_number
 from datetime import datetime, timedelta
 from helper.helper_session import MySession
+from colorama import init, Fore, Style
+init(autoreset=True)
 
 headers={
   'Accept': '*/*',
@@ -94,10 +97,18 @@ async def main(count_process):
     await asyncio.gather(*tasks)
 
 if __name__=="__main__":
-    count_process=1#int(input("Enter count process:"))
+    delay_time=int(input("Enter delay time(second):"))
+    count_process=int(input("Enter count process:"))
     while True:
         asyncio.run(main(count_process))
-        time.sleep(60)
+        print(f"\n{Fore.GREEN+Style.BRIGHT}========={Fore.WHITE+Style.BRIGHT}Tất cả tài khoản đã được xử lý thành công{Fore.GREEN+Style.BRIGHT}=========", end="", flush=True)
+        print(f"\r\n\n{Fore.GREEN+Style.BRIGHT}Làm mới token...", end="", flush=True)
+        
+        for __second in range(delay_time, 0, -1):
+            sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
+            sys.stdout.flush()
+            time.sleep(1)
+        sys.stdout.write("\rĐã đến thời gian nhận tiếp theo!\n")
 
 # def main(delay_time):
 #     try:
