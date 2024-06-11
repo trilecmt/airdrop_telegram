@@ -20,6 +20,8 @@ pip install -r requirements.txt
 Trong account tạo sheet yescoin gồm 2 cột proxy và token.token có thể lấy bằng gpm return localStorage.getItem("YESCOIN_MINI_APP:UserStore")
 Chạy game : python yescoin.py
 
+Đối với timefarm:
+Trong account tạo sheet timefarm gồm 2 cột proxy và query.Khi chạy nhập số phút nghỉ giữa các lần chạy.Tool sẽ chạy 1 luồng duy nhất và claim lại dựa vào số phút chạy để tránh spam game
 
 Lưu ý có thể đổi python thành py/python3/py3... tùy vào máy. Thử lệnh nào máy nhận thì dùng
 
