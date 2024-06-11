@@ -334,7 +334,7 @@ def exec(profile):
 
 
 if __name__=="__main__":
-    second_sleep=int(input("Second sleep after finish a round:"))
+    min_sleep=int(input("Nhập số phút nghỉ ngơi uống cafe chuẩn bị xem xe(gợi ý 540):"))
     while True:
         try:
             
@@ -357,7 +357,7 @@ if __name__=="__main__":
             print(f"\n{Fore.GREEN+Style.BRIGHT}========={Fore.WHITE+Style.BRIGHT}Tất cả tài khoản đã được xử lý thành công{Fore.GREEN+Style.BRIGHT}=========", end="", flush=True)
             print(f"\r\n\n{Fore.GREEN+Style.BRIGHT}Làm mới token...", end="", flush=True)
             
-            for __second in range(second_sleep, 0, -1):
+            for __second in range(min_sleep*60, 0, -1):
                 sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
                 sys.stdout.flush()
                 time.sleep(1)
