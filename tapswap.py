@@ -17,6 +17,13 @@ url_login="https://api.tapswap.ai/api/account/login"
 
 async def exec(profile):
     profile_id=profile['id']
+    content_id =profile['content_id']
+    time_stamp = profile['time_stamp']
+    chr_value = profile['chr']
+    query_id = profile['query']
+    tap_level=profile['tap_level']
+    energy_level=profile['energy_level']
+    
     async with ClientSession(proxy_url=profile['proxy']) as session:
         response =await session.exec_get(url="https://httpbin.org/ip",headers={"content-type": "application/json"})
         if response is None:
@@ -24,7 +31,38 @@ async def exec(profile):
             return
         profile_id=f"{profile_id}[{response['origin']}]"
         
-
+        headers = {
+                "Accept": "*/*",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Connection": "keep-alive",
+                "Content-Id": content_id,
+                "Content-Type": "application/json",
+                "Origin": "https://app.tapswap.club",
+                "Referer": "https://app.tapswap.club/",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "cross-site",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+                "sec-ch-ua": '"Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": "Windows",
+                "x-app": "tapswap_server",
+                "x-bot": "no",
+                "x-cv": "622",
+            }
+        
+        async def upgrade_level(upgrade_type):
+            url = "https://api.tapswap.ai/api/player/upgrade"
+            payload = {"type": upgrade_type}
+            response = await session.exec_post(url, headers=headers, data=payload)
+            return response is not None
+        
+        async def buy_boost(boost_type):
+            url = "https://api.tapswap.ai/api/player/apply_boost"
+            payload = {"type": boost_type}
+            response =await session.exec_post(url, headers=headers, data=payload)
+            return response
+            
         async def get_access_token(tao_data_dc):
             headers = {
                 "Accept": "*/*",
@@ -69,131 +107,89 @@ async def exec(profile):
                     return access_token, energy, boost_ready, energy_ready
             return None, None, None, None
         
-        async def submit_taps(access_token, energy, boost_ready, energy_ready, content_id, time_stamp, tao_data_dc):
+        async def submit_taps(tap_level,energy_limit, energy, boost_ready, energy_ready, content_id, time_stamp, tao_data_dc):
             global turbo_activated
-            turbo_not_ready_notified = False 
+            is_checked_multitap=False
+            is_checked_energy_limit=False
+            is_checked_charge_level=False
 
-            while True:
+            async def __tap(total_taps):
                 url = "https://api.tapswap.ai/api/player/submit_taps"
-                headers = {
-                    "Accept": "*/*",
-                    "Accept-Language": "en-US,en;q=0.9",
-                    "Authorization": f"Bearer {access_token}",
-                    "Connection": "keep-alive",
-                    "Content-Id": content_id,
-                    "Content-Type": "application/json",
-                    "Origin": "https://app.tapswap.club",
-                    "Referer": "https://app.tapswap.club/",
-                    "Sec-Fetch-Dest": "empty",
-                    "Sec-Fetch-Mode": "cors",
-                    "Sec-Fetch-Site": "cross-site",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-                    "sec-ch-ua": '"Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
-                    "sec-ch-ua-mobile": "?0",
-                    "sec-ch-ua-platform": "Windows",
-                    "x-app": "tapswap_server",
-                    "x-bot": "no",
-                    "x-cv": "622",
-                }
-                total_taps=random.randint(50, 250)
-                # total_taps = random.randint(100000, 1000000) if turbo_activated else random.randint(50, 250)
-                response_data =await session.exec_post(url, headers=headers, data={"taps": total_taps, "time": int(time_stamp)})
+                response_data =await session.exec_post(url, headers=headers, data={"taps": total_taps, "time": int(time_stamp)},log=True)
                 if response_data is not None:
-                    energy_dc = response_data.get("player", {}).get("energy", 0)
-                    coin_balance = response_data.get("player", {}).get("shares", 0)
-                    print_message(f"✅ {profile_id} Tap thành công: balance {coin_balance} / năng lượng còn lại {energy_dc}", flush=True)
-                    if energy_dc < 50:         
-                        return print_message(f"❌ {profile_id} Năng lượng thấp.Move next...\n")
+                    print_message(f"✅ {profile_id} Tap thành công: balance {response_data.get('player', {}).get('shares', 0)} / năng lượng còn lại {response_data.get('player', {}).get('energy', 0)}")
                 else:
-                    return
+                    print_message(f"❌ {profile_id} Tap thất bại")
+                return response_data
+
+            response_data=None
+            for index in range(5):
+                response_data=await __tap(random.randint(50, 250))
+                if response_data.get("player", {}).get("energy", 0) < 50:         
+                    break
+            
+            if response_data is None:
+                return
+            
+            for boost in response_data.get("player").get("boost"):
+                if boost.get("type")=="energy":
+                    #mua NL
+                    for k in range(boost['end'],boost['cnt']):
+                        _r=await buy_boost("energy")
+                        if _r is not None:
+                            print_message(f"✅ {profile_id} Mua Energy thành công: balance {response_data.get('player', {}).get('shares', 0)} / năng lượng còn lại {response_data.get('player', {}).get('energy', 0)}")
+                            for index in range(5):
+                                response_data=await __tap(random.randint(50, 250))
+                                if response_data.get("player", {}).get("energy", 0) < 50:         
+                                    break
+                        
+                if boost.get("type")=="turbo":
+                    #mua NL
+                    for k in range(boost['end'],boost['cnt']):
+                        _r=await buy_boost("turbo")
+                        if _r is not None:
+                            print_message(f"✅ {profile_id} Mua Turbo thành công: balance {response_data.get('player', {}).get('shares', 0)} / năng lượng còn lại {response_data.get('player', {}).get('energy', 0)}")
+                            for index in range(22):
+                                response_data=await __tap(random.randint(100000, 1000000))
+
+                #         return print_message(f"❌ {profile_id} Năng lượng thấp.Move next...\n")
+
+            if response_data is not None:
+                if response_data.get("player").get("tap_level")< tap_level:
+                    for i in range(response_data.get("player").get("tap_level")+1,tap_level+1):
+                        r=await upgrade_level(upgrade_type="tap")
+                        if r:
+                            print_message(f"✅ {profile_id} Nâng cấp Tap Level {i} thành công...")
+                        else:
+                            print_message(f"❌ {profile_id} Nâng cấp Tap Level {i} thất bại...")
+                            break
+                 
+                if response_data.get("player").get("energy_level")< energy_level:
+                    for i in range(response_data.get("player").get("energy_level")+1,energy_level+1):
+                        r=await upgrade_level(upgrade_type="energy")
+                        if r:
+                            print_message(f"✅ {profile_id} Nâng cấp Energy Level {i} thành công...")
+                        else:
+                            print_message(f"❌ {profile_id} Nâng cấp Energy Level {i} thất bại...")
+                            break
+                    
+                if response_data.get("player").get("charge_level")< 5:
+                    for i in range(response_data.get("player").get("charge_level")+1,6):
+                        r=await upgrade_level(upgrade_type="charge")
+                        if r:
+                            print_message(f"✅ {profile_id} Nâng cấp Charge Level {i} thành công...")
+                        else:
+                            print_message(f"❌ {profile_id} Nâng cấp Charge Level {i} thất bại...")
+                            break
+
                 
-        content_id =profile['content_id']
-        time_stamp = profile['time_stamp']
-        chr_value = profile['chr']
-        query_id = profile['query']
         tao_data_dc = chr_value + '|' + query_id
         access_token, energy, boost_ready, energy_ready =await  get_access_token(tao_data_dc.strip())
         if access_token:
-            await submit_taps(access_token, energy, boost_ready, energy_ready, content_id, time_stamp, tao_data_dc.strip())
+            headers['Authorization']=f"Bearer {access_token}"
+            await submit_taps(tap_level,energy_level, energy, boost_ready, energy_ready, content_id, time_stamp, tao_data_dc.strip())
 
 
-    turbo_activated = False    
-    def apply_turbo_boost(access_token, proxy):
-        proxies = {
-            "http": f"{proxy}",
-        }
-        global turbo_activated
-        url = "https://api.tapswap.ai/api/player/apply_boost"
-        headers = {
-                "Authorization": f"Bearer {access_token}",
-                "Accept": "*/*",
-                "Accept-Language": "en-US,en;q=0.9",
-                "Content-Type": "application/json",
-                "Connection": "keep-alive",
-                "Origin": "https://app.tapswap.club",
-                "Referer": "https://app.tapswap.club/",
-                "Sec-Fetch-Dest": "empty",
-                "Sec-Fetch-Mode": "cors",
-                "Sec-Fetch-Site": "cross-site",
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-                "sec-ch-ua": '"Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
-                "sec-ch-ua-mobile": "?0",
-                "sec-ch-ua-platform": "Windows",
-                "x-app": "tapswap_server",
-                "x-cv": "622",
-                "x-bot": "no",
-            }
-
-        
-        payload = {"type": "turbo"}
-        if turbo_activated == False:
-            response = requests.post(url, headers=headers, json=payload, proxies=proxies)
-            if response.status_code == 201:
-
-                print(f"\r{Fore.GREEN+Style.BRIGHT}Turbo được kích hoạt thành công", flush=True)
-                turbo_activated = True
-                return True
-
-            else:
-                print(f"{Fore.RED+Style.BRIGHT}Không thể kích hoạt turbo, mã trạng thái: {response.json()}")
-                return False
-        else:
-            print(f"\r{Fore.GREEN+Style.BRIGHT}Turbo đã kích hoạt")
-            return True
-
-
-    not_enough_balance = {
-        "tap": False,
-        "energy": False,
-        "charge": False
-    }
-    
-    def upgrade_level(headers, upgrade_type, proxy):
-        proxies = {
-            "http": f"{proxy}",
-        }
-        global not_enough_balance
-        if not_enough_balance[upgrade_type]:
-            return False
-        for i in range(5):
-            print(f"\r{Fore.WHITE+Style.BRIGHT}Đang nâng cấp {upgrade_type} {'.' * (i % 4)}", end='', flush=True)
-        url = "https://api.tapswap.ai/api/player/upgrade"
-        payload = {"type": upgrade_type}
-        response = requests.post(url, headers=headers, json=payload, proxies=proxies)
-        if response.status_code == 201:
-            print(f"\r{Fore.GREEN+Style.BRIGHT}Nâng cấp {upgrade_type} thành công", flush=True)
-            return True
-        else:
-            response_json = response.json()
-            if 'message' in response_json and 'not_enough_shares' in response_json['message']:
-                print(f"\r{Fore.RED+Style.BRIGHT}Không đủ balance để nâng cấp {upgrade_type}", flush=True)
-                not_enough_balance[upgrade_type] = True
-                return False
-            else:
-                print(f"\r{Fore.RED+Style.BRIGHT}Lỗi khi nâng cấp {upgrade_type}: {response_json['message']}", flush=True)
-            return False
-
-    
         
 async def limited_exec(semaphore, profile):
     async with semaphore:
@@ -206,6 +202,11 @@ async def main(count_process,delay_time):
             df["proxy"] = ""
     df['proxy']=df['proxy'].fillna('')
     
+    if "tap_level" not in df.columns:
+            df["tap_level"] = 14
+    if "energy_level" not in df.columns:
+            df["energy_level"] = 9
+                    
     profiles=[]
     for idx,row in df.iterrows():
         profile={
@@ -214,7 +215,9 @@ async def main(count_process,delay_time):
             "content_id":str(row["content_id"]),
             "chr":str(row["chr"]),
             "time_stamp":str(row["time_stamp"]),
-            "proxy":row["proxy"]
+            "proxy":row["proxy"],
+            "tap_level":row["tap_level"],
+            "energy_level":row["energy_level"],
         }
         profiles.append(profile)
         
