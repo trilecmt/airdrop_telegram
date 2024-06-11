@@ -7,3 +7,4 @@ Brotli==1.1.0
 asyncio
 aiohttp
 colorama
+json_database
