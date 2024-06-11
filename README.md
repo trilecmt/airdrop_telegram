@@ -22,3 +22,8 @@ Chạy game : python yescoin.py
 
 
 Lưu ý có thể đổi python thành py/python3/py3... tùy vào máy. Thử lệnh nào máy nhận thì dùng
+
+
+Cách update version game mới nhất
+- Mở Git bash Chạy lệnh git pull
+- Mở cmd chạy pip install -r requirements.txt
