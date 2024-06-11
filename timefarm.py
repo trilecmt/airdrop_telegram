@@ -97,8 +97,8 @@ async def main(count_process):
     await asyncio.gather(*tasks)
 
 if __name__=="__main__":
-    delay_time=int(input("Enter delay time(minute)(recommend 246):"))
-    count_process=int(input("Enter #CPU:"))
+    delay_time=int(input("Nhập số phút nghỉ giữa các lần chạy(gợi ý 246):"))
+    count_process=int(input("Nhập số luồng sử dụng đồng thời:"))
     while True:
         asyncio.run(main(count_process))
         print(f"\n{Fore.GREEN+Style.BRIGHT}========={Fore.WHITE+Style.BRIGHT}Tất cả tài khoản đã được xử lý thành công{Fore.GREEN+Style.BRIGHT}=========", end="", flush=True)
