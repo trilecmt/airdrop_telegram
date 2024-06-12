@@ -1,5 +1,6 @@
 import sqlite3
 import datetime
+import time
 
 class ScheduleDB:
     def __init__(self,path='schedule.db') -> None:
@@ -15,14 +16,32 @@ class ScheduleDB:
         res_check=self.cur.execute(f"SELECT name FROM sqlite_master WHERE name='schedule'")
         if res_check.fetchone() is None:   
             res_create=self.cur.execute(f"CREATE TABLE schedule({','.join(schema)})")
-            print(res_create)
-            print(f"Table schedule đã được tạo.")
-        else:
-            print(f"Table schedule đã tồn tại.")
 
-    def get_profile(self,profile_name,game):
-        res = self.cur.execute(f"SELECT * FROM schedule WHERE game='{game}' and profile_name='{profile_name}'")
+
+    def get_profiles_for_run(self,game,limit=1):
+        query=f"SELECT * FROM schedule WHERE game='{game}' and IFNULL(next_run_date,0)<{int(time.time()*1000)} order by IFNULL (next_run_date,0) asc LIMIT {limit}"
+        res = self.cur.execute(query)
+        cur=res.fetchall()
+
+        return cur
+    
+    def list_profiles(self,game):
+        query=f"SELECT * FROM schedule WHERE game='{game}'"
+        res = self.cur.execute(query)
         cur=res.fetchone()
+        return cur
+    
+    def get_profile(self,profile_name,game):
+        query=f"SELECT * FROM schedule WHERE game='{game}' and profile_name='{profile_name}'"
+        res = self.cur.execute(query)
+        cur=res.fetchone()
+        if cur is not None:
+            return {
+                "game":cur[0],
+                "profile":cur[1],
+                "latest_run_date":datetime.datetime.strptime(cur[2],"%Y-%m-%dT%H:%M:%S.%fZ"),
+                "next_run_date":datetime.datetime.strptime(cur[3],"%Y-%m-%dT%H:%M:%S.%fZ"),
+            }
         return cur
     
     def insert_profile(self,game,profile_name,latest_run_date,next_run_date):
@@ -41,12 +60,15 @@ class ScheduleDB:
 if __name__=="__main__":
     schedule=ScheduleDB()
     table_name='schedule'
-    game='blum'
+    game='BLUM'
     profile_name="Profile 2"
     schedule.update_profile(
-        table_name=table_name,
         game=game,
         profile_name=profile_name,
         latest_run_date=datetime.datetime.utcnow(),
         next_run_date=datetime.datetime.utcnow()+datetime.timedelta(hours=8)
     )
+    data=schedule.get_profiles_for_run(game=game,limit=10)
+    print(data)
+    
+    pass

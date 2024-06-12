@@ -5,7 +5,10 @@ import datetime
 import configparser
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
- 
+
+def print_welcome(game):
+    print(f"Welcome to {game}")
+    
 def read_config(section,key,file_path='config.ini'):
     config = configparser.RawConfigParser()
     config.read(file_path)

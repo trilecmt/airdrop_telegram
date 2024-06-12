@@ -3,11 +3,16 @@ import sys
 import time
 import pandas as pd
 import traceback
-from helper.utils import print_message, sleep, format_number
+from helper.utils import print_message, print_welcome, sleep, format_number
 from datetime import datetime, timedelta
 from helper.helper_session import MySession
 from colorama import init, Fore, Style
 init(autoreset=True)
+GAME='TIMEFARM'
+
+from helper.helper_schedule import ScheduleDB
+
+schedule=ScheduleDB()
 
 headers={
   'Accept': '*/*',
@@ -30,7 +35,7 @@ headers={
                 
 URL='https://tg-bot-tap.laborx.io/api/v1' 
 
-async def exec(profile):
+def exec(profile):
     profile_id=profile['id']
     try:
         with MySession() as session:
@@ -46,6 +51,13 @@ async def exec(profile):
                 response=session.exec_post(f'{URL}/farming/start', headers=headers, data={})
                 if response is None:
                     return print_message(f"❌ #{profile_id} Start farm failed.Move next...")  
+                claim_time=datetime.strptime(response['activeFarmingStartedAt'], "%Y-%m-%dT%H:%M:%S.%fZ")+ timedelta(seconds=response['farmingDurationInSec'])
+                schedule.update_profile(
+                    game=GAME,
+                    profile_name=profile["name"],
+                    latest_run_date=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                    next_run_date=claim_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                )
                 print_message(f"✅ #{profile_id} Claim farm and restart success.Move next...")          
             
             response=session.exec_post(f'{URL}/auth/validate-init', headers=headers, data=profile['query'],is_convert_dump_json=False)
@@ -59,9 +71,16 @@ async def exec(profile):
                 return print_message(f"❌ #{profile_id} Load farm info failed.Move next...")  
             if  response.get('activeFarmingStartedAt',None) is None:
                 return start_farm()      
-            claim_time=datetime.strptime(response['activeFarmingStartedAt'], "%Y-%m-%dT%H:%M:%S.%fZ")+ timedelta(seconds=response['farmingDurationInSec'])+timedelta(hours=7)
-            if claim_time>(datetime.utcnow()+timedelta(hours=7)):
-                return print_message(f"❌ #{profile_id} Next claim at {claim_time}.Move next...")      
+            claim_time=datetime.strptime(response['activeFarmingStartedAt'], "%Y-%m-%dT%H:%M:%S.%fZ")+ timedelta(seconds=response['farmingDurationInSec'])
+            if claim_time>datetime.utcnow():
+                schedule.update_profile(
+                    game=GAME,
+                    profile_name=profile["name"],
+                    latest_run_date=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                    next_run_date=(claim_time).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                )
+                return print_message(f"❌ #{profile_id} Next claim at {claim_time+timedelta(hours=7)}.Move next...")   
+               
             else:
                 claim()
             
@@ -71,70 +90,31 @@ async def exec(profile):
         pass
 
 
-async def limited_exec(semaphore, profile):
-    async with semaphore:
-        await exec(profile)
 
-async def main(count_process):
-    
-    df=pd.read_excel("account.xlsx",dtype={"query":str},sheet_name='timefarm')
+def main():
+    df=pd.read_excel("account.xlsx",dtype={"query":str,"profile":str},sheet_name='timefarm')
     df=df[(~df['query'].isna()) & (df['query']!='')]
     if "proxy" not in df.columns:
             df["proxy"] = ""
     df['proxy']=df['proxy'].fillna('')
     
-    profiles=[]
     for idx,row in df.iterrows():
         profile={
             "id":idx+1,
+            "name":row["profile"],
             "query":row["query"],
             "proxy":row["proxy"]
         }
-        profiles.append(profile)
-        # await exec(profile)
-    semaphore = asyncio.Semaphore(count_process)  # Limit to 5 concurrent tasks
-    tasks = [limited_exec(semaphore, profile) for profile in profiles]
-    await asyncio.gather(*tasks)
+        db_profile=schedule.get_profile(game=GAME, profile_name=profile['name'])
+        if db_profile is None or  db_profile["next_run_date"] < (datetime.utcnow()):
+            exec(profile)
+
 
 if __name__=="__main__":
-    delay_time=int(input("Nhập số phút nghỉ giữa các lần chạy(gợi ý 246):"))
-    count_process=int(input("Nhập số luồng sử dụng đồng thời:"))
+    print_welcome(game=GAME)
     while True:
-        asyncio.run(main(count_process))
-        print(f"\n{Fore.GREEN+Style.BRIGHT}========={Fore.WHITE+Style.BRIGHT}Tất cả tài khoản đã được xử lý thành công{Fore.GREEN+Style.BRIGHT}=========", end="", flush=True)
-        print(f"\r\n\n{Fore.GREEN+Style.BRIGHT}Làm mới token...", end="", flush=True)
-        
-        for __second in range(delay_time*60, 0, -1):
+        main()       
+        for __second in range(60, 0, -1):
             sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
             sys.stdout.flush()
             time.sleep(1)
-        sys.stdout.write("\rĐã đến thời gian nhận tiếp theo!\n")
-
-# def main(delay_time):
-#     try:
-#         df=pd.read_excel("account.xlsx",dtype={"url":str},sheet_name='memefi')
-#         df=df[(~df['token'].isna()) & (df['token']!='')]
-#         df.reset_index(inplace=True)
-#         if "list_upgrade" not in df.columns:
-#             df["list_upgrade"] = ""
-#         if "proxy" not in df.columns:
-#             df["proxy"] = ""
-#         df['proxy']=df['proxy'].fillna('')
-#         for idx,row in df.iterrows():
-#             exec("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7Il9pZCI6IjY2NWRkN2JkNDgxMjkwOTJkZjlkNjgwMSIsInVzZXJuYW1lIjoiam9uMTEwOCJ9LCJzZXNzaW9uSWQiOiI2NjYzMDlkYjM3YWEzZjk4OWVkNjlhOWMiLCJzdWIiOiI2NjVkZDdiZDQ4MTI5MDkyZGY5ZDY4MDEiLCJpYXQiOjE3MTc3NjY2MTksImV4cCI6MTcxODM3MTQxOX0.X4Z2_y3Knwq3-TmZXylSlq9hyOviRJgpvDzsB6UfeDc"
-#                 #  ,row['token'],
-#                  ,proxy_url=""
-#                  #row['proxy'])
-#             )
-#             time.sleep(10)
-            
-#         time.sleep(delay_time)
-#     except Exception as e:
-#         print(e)
-
-# if __name__=='__main__':
-#     while True:
-#         try:
-#             main(delay_time=120)                      
-#         except Exception as e:
-#             print(e)
