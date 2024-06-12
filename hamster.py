@@ -234,12 +234,16 @@ def exec(profile):
                 print_message(f"❌ #{profile_id} Bought card {condition_card['name']} failed due to Expired")
                 return False
             if condition_card['isAvailable']==True:
+                i=0
                 while condition_card["level"] < condtion["level"]:
+                    i+=1
+                    if i>10:
+                        break
                     get_user_data(is_need_user_info=False) #get balance again
                     if balance > condition_card['price']:
                         response_info = buy_card(condition_card['id']) 
                         sleep(2)
-                        print_message(f"#❌ {profile_id} Buy condition card {condition_card['name']} level {condition_card['level']} success with price {format_number( condition_card['price'])}")
+                        print_message(f"#✅ {profile_id} Buy condition card {condition_card['name']} level {condition_card['level']} success with price {format_number( condition_card['price'])}")
                         condition_card = [item for item in list_upgrade_cards if item['id'] == condtion["upgradeId"]][0] #get new level of condition card in the loop
                     else:
                         print_message(f"❌ #{profile_id} Buy condition card {condition_card['name']} level {condition_card['level']} failed because not enough money: price {format_number( condition_card['price'])}")
@@ -265,7 +269,7 @@ def exec(profile):
             return True
         is_available=True
         for card in daily_combo_cards:
-            if card['isAvailable']==False or card['isExpired']==True:
+            if  card['isExpired']==True:
                 print_message(f"❌ #{profile_id} Bought card {card['name']} failed because not Available/Expired")
                 is_available= False
             if card['isAvailable']==False:
