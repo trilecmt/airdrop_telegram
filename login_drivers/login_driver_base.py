@@ -33,6 +33,7 @@ class LoginDriverBase:
         pass
             
     def get_driver(self,debugger_address:str,window_size:tuple=None,chrome_driver_path=None):
+
         if window_size is None:
             window_size=constraint.DEFAULT_WINDOW_SIZE
         if chrome_driver_path is None:
@@ -43,7 +44,9 @@ class LoginDriverBase:
             # Set the window size
         chrome_options.add_argument(f"--window-size={window_size[0]},{window_size[1]}")
         chrome_options.add_argument("--no-startup-window")
-
+        chrome_options.set_capability(
+            "goog:loggingPrefs", {"performance": "ALL"}
+        )
         chrome_options.add_experimental_option("debuggerAddress", debugger_address)
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.set_window_size(width=window_size[0],height=window_size[1])

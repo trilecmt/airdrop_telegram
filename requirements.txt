@@ -6,3 +6,5 @@ selenium==4.21.0
 Brotli==1.1.0
 asyncio
 aiohttp
+colorama
+json_database

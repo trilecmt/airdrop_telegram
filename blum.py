@@ -1,29 +1,34 @@
 from requests.structures import CaseInsensitiveDict
 import time
 import datetime
-from colorama import init, Fore, Style
 import sys
 import json
 from helper.helper_session import MySession
 import pandas as pd
 import traceback
-
 from helper.utils import print_message
+import time
 
+from colorama import init, Fore, Style
 init(autoreset=True)
 
+GAME='BLUM'
+
+from helper.helper_schedule import ScheduleDB
+
+schedule=ScheduleDB()
 
 def exec(profile):  
     with MySession() as session:
         session.set_proxy(profile['proxy'])
+        
         print_message(f"#{profile['id']} Checking new IP...")
         response = session.exec_get(url="https://httpbin.org/ip",headers={"content-type": "application/json"})
         if response is None:
             print_message(f"#{profile['id']} Get new IP Failed")
             return
-        else:
-            print_message(f"#{profile['id']} New IP:{response['origin']}")
-                
+        
+        profile_header=f"#{profile['id']}-{profile["name"]}[{response['origin']}]" 
         query_id=profile['query']
         
         
@@ -141,7 +146,7 @@ def exec(profile):
                 'origin': 'https://telegram.blum.codes',
                 'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
             }
-            response = session.post('https://game-domain.blum.codes/api/v1/farming/start', headers=headers)
+            response = session.post('https://game-domain.blum.codes/api/v1/farming/start', headers=headers) 
             return response.json()
 
         def refresh_token(old_refresh_token):
@@ -238,9 +243,16 @@ def exec(profile):
             print(f"\r{Fore.RED+Style.BRIGHT}Không thể lấy thông tin số dư")
         farming_info = balance_info.get('farming')
         if farming_info:
-            end_time_ms = farming_info['endTime']
+            end_time_ms = farming_info['endTime']   
             end_time_s = end_time_ms / 1000.0
             end_utc_date_time = datetime.datetime.fromtimestamp(end_time_s, datetime.timezone.utc)
+            schedule.update_profile(
+                game=GAME,
+                profile_name=profile["name"],
+                latest_run_date=datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                next_run_date=end_utc_date_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            )
+
             current_utc_time = datetime.datetime.now(datetime.timezone.utc)
             time_difference = end_utc_date_time - current_utc_time
             hours_remaining = int(time_difference.total_seconds() // 3600)
@@ -270,6 +282,13 @@ def exec(profile):
                 start_response = start_farming(token)
                 if start_response:
                     print(f"\r{Fore.GREEN+Style.BRIGHT}Farming đã bắt đầu.", flush=True)
+                    end_utc_date_time = datetime.datetime.fromtimestamp(start_response['endTime']/ 1000.0 , datetime.timezone.utc)
+                    schedule.update_profile(
+                        game=GAME,
+                        profile_name=profile["name"],
+                        latest_run_date=datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                        next_run_date=end_utc_date_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                    )
                 else:
                     print(f"\r{Fore.RED+Style.BRIGHT}Không thể bắt đầu farming", start_response.status_code, flush=True)
             else:
@@ -335,11 +354,9 @@ def exec(profile):
 
 
 if __name__=="__main__":
-    second_sleep=int(input("Second sleep after finish a round:"))
     while True:
         try:
-            
-            df=pd.read_excel("account.xlsx",dtype={"query":str},sheet_name='blum')
+            df=pd.read_excel("account.xlsx",dtype={"query":str,"profile":str},sheet_name='blum')
             df=df[(~df['query'].isna()) & (df['query']!='')]
             if "proxy" not in df.columns:
                     df["proxy"] = ""
@@ -349,19 +366,18 @@ if __name__=="__main__":
             for idx,row in df.iterrows():
                 profile={
                     "id":idx+1,
+                    "name":row['profile'],
                     "query":row["query"],
                     "proxy":row["proxy"]
                 }
-                profiles.append(profile)
-                exec(profile)
-                
-            print(f"\n{Fore.GREEN+Style.BRIGHT}========={Fore.WHITE+Style.BRIGHT}Tất cả tài khoản đã được xử lý thành công{Fore.GREEN+Style.BRIGHT}=========", end="", flush=True)
-            print(f"\r\n\n{Fore.GREEN+Style.BRIGHT}Làm mới token...", end="", flush=True)
-            
-            for __second in range(second_sleep, 0, -1):
-                sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{giây // 60} phút {Fore.WHITE}{giây % 60} giây")
+                db_profile=schedule.get_profile(game=GAME, profile_name=profile['name'])
+                if db_profile is None or db_profile["next_run_date"] < datetime.datetime.utcnow():
+                    exec(profile)
+    
+            for __second in range(60, 0, -1):
+                sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
                 sys.stdout.flush()
                 time.sleep(1)
-            sys.stdout.write("\rĐã đến thời gian nhận tiếp theo!\n")
+
         except Exception as e:    
             print_message(traceback.format_exc())

@@ -14,6 +14,8 @@ import sys
 import argparse  
 import  helper.utils as utils
 import requests
+from colorama import init, Fore, Style
+init(autoreset=True)
 
 url_config = "https://api.hamsterkombat.io/clicker/config"
 url_get_info = "https://api.hamsterkombat.io/clicker/sync"    
@@ -84,12 +86,12 @@ def exec(profile):
         available_tap = response_info['clickerUser']['availableTaps']
         balance = round(response_info['clickerUser']['balanceCoins'],0)     
         # print_message("---")
-        print_message(f"#{profile_id} User Id: {response_info['clickerUser']['id']}")
-        print_message(f"#{profile_id} Current Level: {response_info['clickerUser']['level']}")
+        # print_message(f"#{profile_id} User Id: {response_info['clickerUser']['id']}")
+        # print_message(f"#{profile_id} Current Level: {response_info['clickerUser']['level']}")
         # print_message(f"#{profile_id} Current Balance: {format_number(balance)}")
         # print_message(f"#{profile_id} Available Tap Sync: {format_number(available_tap)}")
         # print_message(f"#{profile_id} Earn per Tap: {response_info['clickerUser']['earnPerTap']}")
-        print_message(f"#{profile_id} Earn per Hour: {format_number(response_info['clickerUser']['earnPassivePerHour'])}")
+        # print_message(f"#{profile_id} Earn per Hour: {format_number(response_info['clickerUser']['earnPassivePerHour'])}")
         return available_tap
     
     def claim_login():
@@ -289,10 +291,10 @@ def exec(profile):
                         if response_info is not None: 
                             print_message(f"✅ #{profile_id} Buy daily card:Buy success {card['name']} with price {format_number( card['price'])}") 
                         else:
-                            print_message(f"❌ #{profile_id} Buy daily card:Buy failed{card['name']} with price {format_number(card['price'])}")
+                            print_message(f"❌ #{profile_id} Buy daily card:Buy failed {card['name']} with price {format_number(card['price'])}")
                             return False 
                     else:
-                        print_message(f"❌ #{profile_id} Buy daily card:Buy failed{card['name']} with price {format_number(card['price'])} because not enogh money")
+                        print_message(f"❌ #{profile_id} Buy daily card:Buy failed {card['name']} with price {format_number(card['price'])} because not enogh money")
                         #break here to stack more money for the card
                         return False
                 else:
@@ -306,13 +308,7 @@ def exec(profile):
     try:
         available_tap =  get_user_data()  
         claim_login()
-        claim_daily_cipher(cipher=cipher)
-        looping_click(available_tap)
-        time.sleep(2)
-        available_tap = get_boost()
-        if available_tap != 0:
-            looping_click(available_tap)
-        
+        claim_daily_cipher(cipher=cipher)  
         is_continue=buy_daily_combo_card()
         if not is_continue:
             return
@@ -351,23 +347,21 @@ def exec(profile):
         print_message(traceback.format_exc())
 
 
-def main(delay_time,count_processes=2):
+def main(delay_time,count_processes=1):
     try:
         daily_combo_cards_today,cipher=get_daily_cards()
         df=pd.read_excel("account.xlsx",dtype={"token":str},sheet_name='hamster')
         if "no_click" not in df.columns:
             df["no_click"] = 0
+        df=df[(~df['token'].isna()) & (df['token']!='') & (df['no_click']==1)]
 
-        df=df[(~df['token'].isna()) & (df['token']!='') & (df['no_click']!=1) ]
         df.reset_index(inplace=True)
         if "list_upgrade" not in df.columns:
             df["list_upgrade"] = ""
         if "proxy" not in df.columns:
             df["proxy"] = ""
         df['proxy']=df['proxy'].fillna('')
-
-        
-            
+     
         profiles=[]
         for idx,row in df.iterrows():
             profile={
@@ -387,13 +381,19 @@ def main(delay_time,count_processes=2):
         else:
             for profile in profiles:
                 exec(profile)    
-        print_message(f'Sleeping {utils.read_config(section="HAMSTER",key= "delay_time_in_minute")} minutes...')
-        time.sleep(int(utils.read_config(section="HAMSTER",key= "delay_time_in_minute")))
-
+      
+        print(f"\n{Fore.GREEN+Style.BRIGHT}========={Fore.WHITE+Style.BRIGHT}Tất cả tài khoản đã được xử lý thành công{Fore.GREEN+Style.BRIGHT}=========", end="", flush=True)
+        print(f"\r\n\n{Fore.GREEN+Style.BRIGHT}Loading...", end="", flush=True)
+        
+        for __second in range(2*60*60, 0, -1):
+            sys.stdout.write(f"\r{Fore.CYAN}Chờ {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
+            sys.stdout.flush()
+            time.sleep(1)
+        sys.stdout.write("\rBắt đầu xử lý...!\n")
     except Exception as e:
         print_message(traceback.format_exc())
 
 if __name__=='__main__':
-    count_processes=int(input("Enter number process:"))
+    count_processes=1#int(input("Enter number process:"))
     while True:        
         main(delay_time=60,count_processes=count_processes)                      

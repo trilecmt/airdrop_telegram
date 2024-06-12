@@ -18,6 +18,8 @@ async def exec(profile):
     profile_id=profile['id']
     try:
         token=profile['token']
+        if "{" in token and "}" in token:
+            token=json.loads(token).get("token")         
         header = {
             'Content-Type': 'application/json',
             'Accept': 'application/json, text/plain, */*',
@@ -89,8 +91,9 @@ async def main(count_process):
     await asyncio.gather(*tasks)
 
 if __name__=="__main__":
-    count_process=int(input("Enter count process:"))
+    count_process=int(input("Enter #CPU:"))
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
     while True:
         asyncio.run(main(count_process))
-        time.sleep(10)
+        # time.sleep(10)
 
