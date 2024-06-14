@@ -8,7 +8,26 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 def print_welcome(game):
     print(f"Welcome to {game}")
+
+def get_proxies(proxy_url,type):
     
+    if proxy_url is not None and proxy_url!='':  
+        if not proxy_url.startswith("http"):
+            if len(proxy_url.split(":"))==2:       
+                host=proxy_url.split(":")[0]
+                port=proxy_url.split(":")[1]
+                proxy_url=f'http://{host}:{port}'
+            else:
+                username=proxy_url.split(":")[2]
+                password=proxy_url.split(":")[3]
+                host=proxy_url.split(":")[0]
+                port=proxy_url.split(":")[1]
+                proxy_url=f'http://{username}:{password}@{host}:{port}'
+        if type==0:
+            return proxy_url
+        if type==1:
+            return {'http':proxy_url,'https':proxy_url}
+
 def read_config(section,key,file_path='config.ini'):
     config = configparser.RawConfigParser()
     config.read(file_path)
