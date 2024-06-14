@@ -644,7 +644,49 @@ async def exec(profile):
             json_payload = {
                     "operationName": "telegramGamePurchaseUpgrade",
                     "variables": {"upgradeType": "TapBot"},
-                    "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nmutation TapbotStart {\n  telegramGameTapbotStart {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
+                    "query": """mutation telegramGamePurchaseUpgrade($upgradeType: UpgradeType!) {
+  telegramGamePurchaseUpgrade(type: $upgradeType) {
+    ...FragmentBossFightConfig
+    __typename
+  }
+}
+
+fragment FragmentBossFightConfig on TelegramGameConfigOutput {
+  _id
+  coinsAmount
+  currentEnergy
+  maxEnergy
+  weaponLevel
+  zonesCount
+  tapsReward
+  energyLimitLevel
+  energyRechargeLevel
+  tapBotLevel
+  currentBoss {
+    _id
+    level
+    currentHealth
+    maxHealth
+    __typename
+  }
+  freeBoosts {
+    _id
+    currentTurboAmount
+    maxTurboAmount
+    turboLastActivatedAt
+    turboAmountLastRechargeDate
+    currentRefillEnergyAmount
+    maxRefillEnergyAmount
+    refillEnergyLastActivatedAt
+    refillEnergyAmountLastRechargeDate
+    __typename
+  }
+  bonusLeaderDamageEndAt
+  bonusLeaderDamageStartAt
+  bonusLeaderDamageMultiplier
+  nonce
+  __typename
+}"""
                     }
             async with session.post(url, json=json_payload, headers=headers,proxy=proxies) as response:
                 jsons = await response.json()
@@ -764,14 +806,13 @@ async def exec(profile):
         
         # print_message(f"✅ #{profile_id} Free Turbo : {user_data['freeBoosts']['currentTurboAmount']} Free Energy : {user_data['freeBoosts']['currentRefillEnergyAmount']}")
         # print_message(f"✅ #{profile_id} Boss level : {user_data['currentBoss']['level']} | Boss health : {user_data['currentBoss']['currentHealth']} - {user_data['currentBoss']['maxHealth']}")
+        for i in range(user_data.get("energyRechargeLevel"),5):
+            r=await upgrade("EnergyRechargeRate")
         for i in range(user_data.get("weaponLevel"),profile['dame_level']):
             r=await upgrade("Damage")
-            
-
         for i in range(user_data.get("energyLimitLevel"),profile['energy_level']):
             r=await upgrade("EnergyCap")
-        # for i in range(user_data.get("energyRechargeLevel"),5):
-        #   await upgrade("EnergyCap")
+        
         if boss_health <= 0:
             r=await change_boss()
             if r is not None:
@@ -815,8 +856,6 @@ async def exec(profile):
             while True:
                 respon = await submit_taps(total_tap)   
                 if respon is not None:
-                    print(f"Tapped")
-                    # print(respon)
                     energy = respon['telegramGameProcessTapsBatch']['currentEnergy']
                     current_boss = respon['telegramGameProcessTapsBatch']['currentBoss']['currentHealth']
                     print_message(f"✅ #{profile_id} Tap thành công.Năng lượng còn lại:{energy}.Máu boss còn lại:{current_boss}")
