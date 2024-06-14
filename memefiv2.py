@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 from urllib.parse import unquote
 from helper.utils import print_message, sleep, format_number
 from helper import utils
+TODAY_VECTOR="1,4,1,4".replace(" ","")
 headers_set = {
         'Accept': 'application/json',
         'Accept-Language': 'en-US,en;q=0.9',
@@ -536,14 +537,18 @@ async def exec(profile):
                     print(f" Gagal dengan status {response.status}, mencoba lagi...")
                     return None 
         
-        async def submit_taps(total_tap):
-            
+        async def submit_taps(total_tap=None,vector=None):           
+            if vector is None:
+                vector=",".join([str(random.randint(1,4)) for i in range(total_tap)])
+            if total_tap is None:
+                total_tap=len(vector.split(","))
             json_payload = {
                 "operationName": "MutationGameProcessTapsBatch",
                 "variables": {
                     "payload": {
                         "nonce": generate_random_nonce(),
-                        "tapsCount": total_tap
+                        "tapsCount": total_tap,
+                        "vector":vector
                     }
                 },
                 "query": MUTATION_GAME_PROCESS_TAPS_BATCH
@@ -553,8 +558,7 @@ async def exec(profile):
                     response_data = await response.json()
                     return response_data['data']  # Mengembalikan hasil response
                 else:
-                    print(f" Gagal Tap dengan status {response.status}, mencoba lagi...")
-                    return None  # Mengembalikan respons error
+                    print_message(f"❌ #{profile_id} Lỗi khi tap thất bại")
 
         async def upgrade(upgrade_type):
             json_payload = {
@@ -668,8 +672,8 @@ async def exec(profile):
                   response_json= await response.json()
                   return response_json           
               else:
-                  print_message(f"❌ #{profile_id} Get new IP Failed")
-                  return
+                  return print_message(f"❌ #{profile_id} Get new IP Failed")
+              
         ip_data=await get_ip()
         if ip_data is None:
             return print_message(f"❌ #{profile_id} Lấy IP thất bại.")
@@ -680,143 +684,151 @@ async def exec(profile):
         
         headers['Authorization'] = f'Bearer {access_token}'
         result = await cek_user()
-        if result is not None:
-            first_name = result.get('firstName', 'Unknown')
-            last_name = result.get('lastName', 'Unknown')    
-        else:
+        if result is  None:
             return print_message(f"❌ #{profile_id} Load dữ liệu user thất bại.")
         
-        stat_result = await cek_stat()
+        user_data = await cek_stat()
+        if user_data is None:
+            return print_message(f"❌ #{profile_id} Load dữ liệu game thất bại.")
 
-        if stat_result is not None:
-            user_data = stat_result                
-            energy_sekarang = user_data['currentEnergy']
-            boost_energy_amount = user_data['freeBoosts']['currentRefillEnergyAmount']
-            boost_turbo_amount = user_data['freeBoosts']['currentTurboAmount']
-            boss_health = user_data['currentBoss']['currentHealth']
-            current_level_boss = user_data['currentBoss']['level']
-            
-            print_message(f"✅ #{profile_id} Balance : {user_data['coinsAmount']} | Energy : {user_data['currentEnergy']} - {user_data['maxEnergy']}")
-            async def get_tap_bot_config():
-                json_payload = {
-                    "operationName": "TapbotConfig",
-                    "variables": {},
-                    "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nquery TapbotConfig {\n  telegramGameTapbotGetConfig {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
-                }
-                async with session.post(url, json=json_payload, headers=headers,proxy=proxies) as response:
-                    if response.status == 200:
-                        response_data = await response.json()
-                        user_data = response_data['data']['telegramGameTapbotGetConfig']
-                        return user_data
-          
+        before_amount= user_data['coinsAmount']
+        await submit_taps(vector=TODAY_VECTOR)
+        user_data = await cek_stat()
+        if user_data is None:
+            return print_message(f"❌ #{profile_id} Load dữ liệu game thất bại.")
+        after_amount=user_data['coinsAmount']
+        if after_amount-before_amount>=1_000_000:
+            print_message(f"✅ #{profile_id} Giải mật mã thành công.Trước {before_amount} Sau {after_amount}")
+        else:
+            print_message(f"❌ #{profile_id} Giải mật mã thất bại..Trước {before_amount} Sau {after_amount}")
 
-            async def process_bot(current_balance):
-                tap_bot_config=await get_tap_bot_config()
-                is_purchase = tap_bot_config["isPurchased"]
-                if not is_purchase:
-                    if current_balance >= 200000:
-                        r=await buy_bot()
-                        if r is not None:
-                            return print_message(f"✅ #{profile_id} Mua BOT AFK thành công.")
-                        else:
-                            return print_message(f"❌ #{profile_id} Đã có lỗi xảy ra khi mua BOT AFK.")
-                    else:
-                        return print_message(f"❌ #{profile_id} Không đủ balance mua BOT AFK.")
+        boost_energy_amount = user_data['freeBoosts']['currentRefillEnergyAmount']
+        boost_turbo_amount = user_data['freeBoosts']['currentTurboAmount']
+        boss_health = user_data['currentBoss']['currentHealth']
+        current_level_boss = user_data['currentBoss']['level']
+        print_message(f"✅ #{profile_id} Balance : {user_data['coinsAmount']} | Energy : {user_data['currentEnergy']} - {user_data['maxEnergy']}")
+        async def get_tap_bot_config():
+            json_payload = {
+                "operationName": "TapbotConfig",
+                "variables": {},
+                "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nquery TapbotConfig {\n  telegramGameTapbotGetConfig {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
+            }
+            async with session.post(url, json=json_payload, headers=headers,proxy=proxies) as response:
+                if response.status == 200:
+                    response_data = await response.json()
+                    user_data = response_data['data']['telegramGameTapbotGetConfig']
+                    return user_data
+        
 
-                def get_date_format(date_str : str):
-                    date_format = '%Y-%m-%dT%H:%M:%S.%fZ'
-                    if date_str is None:
-                        return ""
+        async def process_bot(current_balance):
+            tap_bot_config=await get_tap_bot_config()
+            is_purchase = tap_bot_config["isPurchased"]
+            if not is_purchase:
+                if current_balance >= 200000:
+                    r=await buy_bot()
+                    if r is not None:
+                        return print_message(f"✅ #{profile_id} Mua BOT AFK thành công.")
                     else:
-                        return datetime.strptime(date_str, date_format) + timedelta (hours=7)
-                    
-                end_at = get_date_format(tap_bot_config["endsAt"])
-                if end_at == "":
-                    if tap_bot_config["totalAttempts"] - tap_bot_config["usedAttempts"]> 0:
-                        r= await start_bot()
-                        if r is not None:
-                            return print_message(f"✅ #{profile_id} ACTIVATE BOT AFK thành công.")
-                        else:
-                            return print_message(f"❌ #{profile_id} Đã có lỗi xảy ra khi ACTIVATE BOT AFK.")
-                    else:
-                        return print_message(f"✅ #{profile_id} Đã hết lượt ACTIVATE BOT AFK.")
+                        return print_message(f"❌ #{profile_id} Đã có lỗi xảy ra khi mua BOT AFK.")
                 else:
-                    if end_at <= datetime.now():
-                        await claim_bot()
-                    else:
-                        print_message(f"❌ #{profile_id} Chưa đến thời gian CLAIM BOT AFK. {end_at}")
+                    return print_message(f"❌ #{profile_id} Không đủ balance mua BOT AFK.")
 
-            await process_bot(user_data['coinsAmount'])
-            
-            if current_level_boss == 11:
-                print_message("❌ #{profile_id} đã max level boss", flush=True)
-                return
-            
-            print_message(f"✅ #{profile_id} Free Turbo : {user_data['freeBoosts']['currentTurboAmount']} Free Energy : {user_data['freeBoosts']['currentRefillEnergyAmount']}")
-            print_message(f"✅ #{profile_id} Boss level : {user_data['currentBoss']['level']} | Boss health : {user_data['currentBoss']['currentHealth']} - {user_data['currentBoss']['maxHealth']}")
-            for i in range(user_data.get("weaponLevel"),profile['dame_level']):
-                r=await upgrade("Damage")
+            def get_date_format(date_str : str):
+                date_format = '%Y-%m-%dT%H:%M:%S.%fZ'
+                if date_str is None:
+                    return ""
+                else:
+                    return datetime.strptime(date_str, date_format) + timedelta (hours=7)
                 
-
-            for i in range(user_data.get("energyLimitLevel"),profile['energy_level']):
-                r=await upgrade("EnergyCap")
-            # for i in range(user_data.get("energyRechargeLevel"),5):
-            #   await upgrade("EnergyCap")
-            if boss_health <= 0:
-                r=await change_boss()
-                if r is not None:
-                    print_message(f"✅ #{profile_id} Đã chuyển boss thành công.")
+            end_at = get_date_format(tap_bot_config["endsAt"])
+            if end_at == "":
+                if tap_bot_config["totalAttempts"] - tap_bot_config["usedAttempts"]> 0:
+                    r= await start_bot()
+                    if r is not None:
+                        return print_message(f"✅ #{profile_id} ACTIVATE BOT AFK thành công.")
+                    else:
+                        return print_message(f"❌ #{profile_id} Đã có lỗi xảy ra khi ACTIVATE BOT AFK.")
                 else:
-                    print_message(f"❌ #{profile_id} Đã chuyển boss thất bại")
+                    return print_message(f"✅ #{profile_id} Đã hết lượt ACTIVATE BOT AFK.")
+            else:
+                if end_at <= datetime.now():
+                    await claim_bot()
+                else:
+                    print_message(f"❌ #{profile_id} Chưa đến thời gian CLAIM BOT AFK. {end_at}")
 
-            async def farm():
-                while True:
-                    total_tap = random.randint(30, 100)
-                    respon = await submit_taps(total_tap)
-                    if respon is not None:
-                        energy = respon['telegramGameProcessTapsBatch']['currentEnergy']
-                        current_boss = respon['telegramGameProcessTapsBatch']['currentBoss']['currentHealth']
-                        print_message(f"✅ #{profile_id} Tap thành công.Năng lượng còn lại:{energy}.Máu boss còn lại:{current_boss}")
-                        if current_boss <= 0:
-                            await change_boss()
-
-                        if energy < 150:
-                            print_message(f"❌ #{profile_id} Năng lượng dưới 150.Tạm nghỉ")
-                            break                 
-                    else:
-                        print_message(f"❌ #{profile_id} Tap thất bại")
-                        break
+        await process_bot(user_data['coinsAmount'])
+        
+        if current_level_boss == 11:
+            print_message("❌ #{profile_id} đã max level boss", flush=True)
+            return
+        
+        # print_message(f"✅ #{profile_id} Free Turbo : {user_data['freeBoosts']['currentTurboAmount']} Free Energy : {user_data['freeBoosts']['currentRefillEnergyAmount']}")
+        # print_message(f"✅ #{profile_id} Boss level : {user_data['currentBoss']['level']} | Boss health : {user_data['currentBoss']['currentHealth']} - {user_data['currentBoss']['maxHealth']}")
+        for i in range(user_data.get("weaponLevel"),profile['dame_level']):
+            r=await upgrade("Damage")
             
-            await farm()
 
-            for i  in range(boost_energy_amount):
-                await apply_boost("Recharge")
-                await farm()
-                time.sleep(3)
+        for i in range(user_data.get("energyLimitLevel"),profile['energy_level']):
+            r=await upgrade("EnergyCap")
+        # for i in range(user_data.get("energyRechargeLevel"),5):
+        #   await upgrade("EnergyCap")
+        if boss_health <= 0:
+            r=await change_boss()
+            if r is not None:
+                print_message(f"✅ #{profile_id} Đã chuyển boss thành công.")
+            else:
+                print_message(f"❌ #{profile_id} Đã chuyển boss thất bại")
 
-            for i  in range(boost_turbo_amount):
-                boost_type = "Turbo"
-                await apply_boost(boost_type)
-                turbo_time = time.time()
-                total_tap = random.randint(100, 200)
-                while True:
-                    respon = await submit_taps(total_tap)   
-                    if respon is not None:
-                        print(f"Tapped")
-                        # print(respon)
-                        energy = respon['telegramGameProcessTapsBatch']['currentEnergy']
-                        current_boss = respon['telegramGameProcessTapsBatch']['currentBoss']['currentHealth']
-                        print_message(f"✅ #{profile_id} Tap thành công.Năng lượng còn lại:{energy}.Máu boss còn lại:{current_boss}")
-                    else:
-                        print_message(f"❌ #{profile_id} Tap thất bại")
-                        break
-                    
+        async def farm():
+            while True:
+                total_tap = random.randint(30, 100)
+                respon = await submit_taps(total_tap)
+                if respon is not None:
+                    energy = respon['telegramGameProcessTapsBatch']['currentEnergy']
+                    current_boss = respon['telegramGameProcessTapsBatch']['currentBoss']['currentHealth']
+                    print_message(f"✅ #{profile_id} Tap thành công.Năng lượng còn lại:{energy}.Máu boss còn lại:{current_boss}")
                     if current_boss <= 0:
                         await change_boss()
-                    if ((time.time() - turbo_time) > 10):
-                        turbo_time = 0
-                        break
-                
+
+                    if energy < 150:
+                        print_message(f"❌ #{profile_id} Năng lượng dưới 150.Tạm nghỉ")
+                        break                 
+                else:
+                    print_message(f"❌ #{profile_id} Tap thất bại")
+                    break
+                time.sleep(2) 
+        await farm()
+
+        #giải mật mã
+
+
+        for i  in range(boost_energy_amount):
+            await apply_boost("Recharge")
+            await farm()
+            time.sleep(3)
+
+        for i  in range(boost_turbo_amount):
+            boost_type = "Turbo"
+            await apply_boost(boost_type)
+            turbo_time = time.time()
+            total_tap = random.randint(100, 200)
+            while True:
+                respon = await submit_taps(total_tap)   
+                if respon is not None:
+                    print(f"Tapped")
+                    # print(respon)
+                    energy = respon['telegramGameProcessTapsBatch']['currentEnergy']
+                    current_boss = respon['telegramGameProcessTapsBatch']['currentBoss']['currentHealth']
+                    print_message(f"✅ #{profile_id} Tap thành công.Năng lượng còn lại:{energy}.Máu boss còn lại:{current_boss}")
+                else:
+                    print_message(f"❌ #{profile_id} Tap thất bại")
+                    break      
+                if current_boss <= 0:
+                    await change_boss()
+                if ((time.time() - turbo_time) > 10):
+                    turbo_time = 0
+                    break
+                time.sleep(2) 
 
 async def limited_exec(semaphore, profile):
     async with semaphore:
