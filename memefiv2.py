@@ -1,13 +1,377 @@
-import asyncio
-import time
-from urllib.parse import unquote
-import pandas as pd
-from pprint import pprint
-import json
-import random
+import sys
 import traceback
-from helper.utils import print_message, sleep, format_number
+import aiohttp
+import asyncio
+import json
+import os
+from colorama import Fore
+import pandas as pd
+import pytz
+import random
+import string
+import time
 from datetime import datetime, timedelta
+from urllib.parse import unquote
+from helper.utils import print_message, sleep, format_number
+from helper import utils
+headers_set = {
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Content-Type': 'application/json',
+        'Origin': 'https://tg-app.memefi.club',
+        'Referer': 'https://tg-app.memefi.club/',
+        'Sec-Ch-Ua': '"Google Chrome";v="123", "Not:A-Brand";v="8", "Chromium";v="123"',
+        'Sec-Ch-Ua-mobile': '?1',
+        'Sec-Ch-Ua-platform': '"Android"',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36',
+}
+
+QUERY_GAME_CONFIG = """
+query QUERY_GAME_CONFIG {
+  telegramGameGetConfig {
+    ...FragmentBossFightConfig
+    __typename
+  }
+}
+
+fragment FragmentBossFightConfig on TelegramGameConfigOutput {
+  _id
+  coinsAmount
+  currentEnergy
+  maxEnergy
+  weaponLevel
+  energyLimitLevel
+  energyRechargeLevel
+  tapBotLevel
+  currentBoss {
+    _id
+    level
+    currentHealth
+    maxHealth
+    __typename
+  }
+  freeBoosts {
+    _id
+    currentTurboAmount
+    maxTurboAmount
+    turboLastActivatedAt
+    turboAmountLastRechargeDate
+    currentRefillEnergyAmount
+    maxRefillEnergyAmount
+    refillEnergyLastActivatedAt
+    refillEnergyAmountLastRechargeDate
+    __typename
+  }
+  bonusLeaderDamageEndAt
+  bonusLeaderDamageStartAt
+  bonusLeaderDamageMultiplier
+  nonce
+  __typename
+}
+"""
+
+# Tambahkan query-query lainnya dengan format yang sama
+
+MUTATION_GAME_PROCESS_TAPS_BATCH = """
+    mutation MutationGameProcessTapsBatch($payload: TelegramGameTapsBatchInput!) {
+      telegramGameProcessTapsBatch(payload: $payload) {
+        ...FragmentBossFightConfig
+        __typename
+      }
+    }
+
+    fragment FragmentBossFightConfig on TelegramGameConfigOutput {
+      _id
+      coinsAmount
+      currentEnergy
+      maxEnergy
+      weaponLevel
+      energyLimitLevel
+      energyRechargeLevel
+      tapBotLevel
+      currentBoss {
+        _id
+        level
+        currentHealth
+        maxHealth
+        __typename
+      }
+      freeBoosts {
+        _id
+        currentTurboAmount
+        maxTurboAmount
+        turboLastActivatedAt
+        turboAmountLastRechargeDate
+        currentRefillEnergyAmount
+        maxRefillEnergyAmount
+        refillEnergyLastActivatedAt
+        refillEnergyAmountLastRechargeDate
+        __typename
+      }
+      bonusLeaderDamageEndAt
+      bonusLeaderDamageStartAt
+      bonusLeaderDamageMultiplier
+      nonce
+      __typename
+    }
+    """
+UPGRADE_QUERY = """
+        mutation telegramGamePurchaseUpgrade($upgradeType: UpgradeType!) {
+          telegramGamePurchaseUpgrade(type: $upgradeType) {
+            ...FragmentBossFightConfig
+            __typename
+          }
+        }
+        fragment FragmentBossFightConfig on TelegramGameConfigOutput {
+          _id
+          coinsAmount
+          currentEnergy
+          maxEnergy
+          weaponLevel
+          energyLimitLevel
+          energyRechargeLevel
+          tapBotLevel
+          currentBoss {
+            _id
+            level
+            currentHealth
+            maxHealth
+            __typename
+          }
+          freeBoosts {
+            _id
+            currentTurboAmount
+            maxTurboAmount
+            turboLastActivatedAt
+            turboAmountLastRechargeDate
+            currentRefillEnergyAmount
+            maxRefillEnergyAmount
+            refillEnergyLastActivatedAt
+            refillEnergyAmountLastRechargeDate
+            __typename
+          }
+          bonusLeaderDamageEndAt
+          bonusLeaderDamageStartAt
+          bonusLeaderDamageMultiplier
+          nonce
+          __typename
+        }
+        """
+
+QUERY_BOOSTER = """
+            mutation telegramGameActivateBooster($boosterType: BoosterType!) {
+              telegramGameActivateBooster(boosterType: $boosterType) {
+                ...FragmentBossFightConfig
+                __typename
+              }
+            }
+            fragment FragmentBossFightConfig on TelegramGameConfigOutput {
+              _id
+              coinsAmount
+              currentEnergy
+              maxEnergy
+              weaponLevel
+              energyLimitLevel
+              energyRechargeLevel
+              tapBotLevel
+              currentBoss {
+                _id
+                level
+                currentHealth
+                maxHealth
+                __typename
+              }
+              freeBoosts {
+                _id
+                currentTurboAmount
+                maxTurboAmount
+                turboLastActivatedAt
+                turboAmountLastRechargeDate
+                currentRefillEnergyAmount
+                maxRefillEnergyAmount
+                refillEnergyLastActivatedAt
+                refillEnergyAmountLastRechargeDate
+                __typename
+              }
+              bonusLeaderDamageEndAt
+              bonusLeaderDamageStartAt
+              bonusLeaderDamageMultiplier
+              nonce
+              __typename
+            }
+            """
+
+QUERY_NEXT_BOSS = """
+        mutation telegramGameSetNextBoss {
+          telegramGameSetNextBoss {
+            ...FragmentBossFightConfig
+            __typename
+          }
+        }
+        fragment FragmentBossFightConfig on TelegramGameConfigOutput {
+          _id
+          coinsAmount
+          currentEnergy
+          maxEnergy
+          weaponLevel
+          energyLimitLevel
+          energyRechargeLevel
+          tapBotLevel
+          currentBoss {
+            _id
+            level
+            currentHealth
+            maxHealth
+            __typename
+          }
+          freeBoosts {
+            _id
+            currentTurboAmount
+            maxTurboAmount
+            turboLastActivatedAt
+            turboAmountLastRechargeDate
+            currentRefillEnergyAmount
+            maxRefillEnergyAmount
+            refillEnergyLastActivatedAt
+            refillEnergyAmountLastRechargeDate
+            __typename
+          }
+          bonusLeaderDamageEndAt
+          bonusLeaderDamageStartAt
+          bonusLeaderDamageMultiplier
+          nonce
+          __typename
+        }
+        """
+
+QUERY_GET_TASK = """
+        fragment FragmentCampaignTask on CampaignTaskOutput {
+          id
+          name
+          description
+          status
+          type
+          position
+          buttonText
+          coinsRewardAmount
+          link
+          userTaskId
+          isRequired
+          iconUrl
+          __typename
+        }
+
+        query GetTasksList($campaignId: String!) {
+          campaignTasks(campaignConfigId: $campaignId) {
+            ...FragmentCampaignTask
+            __typename
+          }
+        }
+        """
+
+QUERY_TASK_ID = """
+                fragment FragmentCampaignTask on CampaignTaskOutput {
+                  id
+                  name
+                  description
+                  status
+                  type
+                  position
+                  buttonText
+                  coinsRewardAmount
+                  link
+                  userTaskId
+                  isRequired
+                  iconUrl
+                  __typename
+                }
+
+                query GetTaskById($taskId: String!) {
+                  campaignTaskGetConfig(taskId: $taskId) {
+                    ...FragmentCampaignTask
+                    __typename
+                  }
+                }
+                """
+
+QUERY_TASK_VERIF = """
+                fragment FragmentCampaignTask on CampaignTaskOutput {
+                  id
+                  name
+                  description
+                  status
+                  type
+                  position
+                  buttonText
+                  coinsRewardAmount
+                  link
+                  userTaskId
+                  isRequired
+                  iconUrl
+                  __typename
+                }
+
+                mutation CampaignTaskToVerification($userTaskId: String!) {
+                  campaignTaskMoveToVerification(userTaskId: $userTaskId) {
+                    ...FragmentCampaignTask
+                    __typename
+                  }
+                }
+                """
+
+QUERY_TASK_COMPLETED = """
+                fragment FragmentCampaignTask on CampaignTaskOutput {
+                  id
+                  name
+                  description
+                  status
+                  type
+                  position
+                  buttonText
+                  coinsRewardAmount
+                  link
+                  userTaskId
+                  isRequired
+                  iconUrl
+                  __typename
+                }
+
+                mutation CampaignTaskCompleted($userTaskId: String!) {
+                  campaignTaskMarkAsCompleted(userTaskId: $userTaskId) {
+                    ...FragmentCampaignTask
+                    __typename
+                  }
+                }
+                """
+QUERY_USER = """
+        query QueryTelegramUserMe {
+          telegramUserMe {
+            firstName
+            lastName
+            telegramId
+            username
+            referralCode
+            isDailyRewardClaimed
+            referral {
+              username
+              lastName
+              firstName
+              bossLevel
+              coinsAmount
+              __typename
+            }
+            isReferralInitialJoinBonusAvailable
+            league
+            leagueIsOverTop10k
+            leaguePosition
+            _id
+            __typename
+          }
+        }
+        """
 
 QUERY_LOGIN = """mutation MutationTelegramUserLogin($webAppData: TelegramWebAppDataInput!) {
             telegramUserLogin(webAppData: $webAppData) {
@@ -15,308 +379,469 @@ QUERY_LOGIN = """mutation MutationTelegramUserLogin($webAppData: TelegramWebAppD
                 __typename
             }
         }"""
-url = 'https://api-gw-tg.memefi.club/graphql'
+
+QUERY_BOT_CLAIM = """
+fragment FragmentTapBotConfig on TelegramGameTapbotOutput {
+  damagePerSec
+      endsAt
+          id
+            isPurchased
+            startsAt
+            totalAttempts
+            usedAttempts
+            __typename
+          }
+          
+          mutation TapbotClaim {
+            telegramGameTapbotClaimCoins {
+              ...FragmentTapBotConfig
+              __typename
+            }
+          }"""
+
+QUERY_BOT_START = """fragment FragmentTapBotConfig on TelegramGameTapbotOutput {
+  damagePerSec
+  endsAt
+  id
+  isPurchased
+  startsAt
+  totalAttempts
+  usedAttempts
+  __typename
+}
+
+mutation TapbotStart {
+  telegramGameTapbotStart {
+    ...FragmentTapBotConfig
+    __typename
+  }
+}"""
+
+QUERY_UPGRADE="""mutation telegramGamePurchaseUpgrade($upgradeType: UpgradeType!) {
+  telegramGamePurchaseUpgrade(type: $upgradeType) {
+    ...FragmentBossFightConfig
+    __typename
+  }
+}
+
+fragment FragmentBossFightConfig on TelegramGameConfigOutput {
+  _id
+  coinsAmount
+  currentEnergy
+  maxEnergy
+  weaponLevel
+  zonesCount
+  tapsReward
+  energyLimitLevel
+  energyRechargeLevel
+  tapBotLevel
+  currentBoss {
+    _id
+    level
+    currentHealth
+    maxHealth
+    __typename
+  }
+  freeBoosts {
+    _id
+    currentTurboAmount
+    maxTurboAmount
+    turboLastActivatedAt
+    turboAmountLastRechargeDate
+    currentRefillEnergyAmount
+    maxRefillEnergyAmount
+    refillEnergyLastActivatedAt
+    refillEnergyAmountLastRechargeDate
+    __typename
+  }
+  bonusLeaderDamageEndAt
+  bonusLeaderDamageStartAt
+  bonusLeaderDamageMultiplier
+  nonce
+  __typename
+}"""
+
+url = "https://api-gw-tg.memefi.club/graphql"
+
+def generate_random_nonce(length=52):
+    characters = string.ascii_letters + string.digits
+    return ''.join(random.choice(characters) for _ in range(length))
 
 
-def create_payload_login(query):
-    tg_web_data = unquote(unquote(query))
-    query_id = tg_web_data.split('query_id=', maxsplit=1)[1].split('&user', maxsplit=1)[0]
-    user_data = tg_web_data.split('user=', maxsplit=1)[1].split('&auth_date', maxsplit=1)[0]
-    auth_date = tg_web_data.split('auth_date=', maxsplit=1)[1].split('&hash', maxsplit=1)[0]
-    hash_ = tg_web_data.split('hash=', maxsplit=1)[1].split('&', maxsplit=1)[0]
-    user_data_dict = json.loads(unquote(user_data))
-    data = {
-        "operationName": "MutationTelegramUserLogin",
-        "variables": {
-            "webAppData": {
-                "auth_date": int(auth_date),
-                "hash": hash_,
-                "query_id": query_id,
-                "checkDataString": f"auth_date={auth_date}\nquery_id={query_id}\nuser={unquote(user_data)}",
-                "user": {
-                    "id": user_data_dict["id"],
-                    "allows_write_to_pm": user_data_dict.get("allows_write_to_pm",True),
-                    "first_name": user_data_dict["first_name"],
-                    "last_name": user_data_dict["last_name"],
-                    "username": user_data_dict.get("username", "Username không được đặt"),
-                    "language_code": user_data_dict["language_code"],
-                    "version": "7.2",
-                    "platform": "ios"
+async def exec(profile): 
+    headers = headers_set.copy()
+    proxies=utils.get_proxies(profile["proxy"],type=0)
+    profile_id=""
+    async with aiohttp.ClientSession() as session:
+        async def auth(query):
+            tg_web_data = unquote(unquote(query))
+            query_id = tg_web_data.split('query_id=', maxsplit=1)[1].split('&user', maxsplit=1)[0]
+            user_data = tg_web_data.split('user=', maxsplit=1)[1].split('&auth_date', maxsplit=1)[0]
+            auth_date = tg_web_data.split('auth_date=', maxsplit=1)[1].split('&hash', maxsplit=1)[0]
+            hash_ = tg_web_data.split('hash=', maxsplit=1)[1].split('&', maxsplit=1)[0]
+
+            user_data_dict = json.loads(unquote(user_data))
+            headers = headers_set.copy() 
+            data = {
+                "operationName": "MutationTelegramUserLogin",
+                "variables": {
+                    "webAppData": {
+                        "auth_date": int(auth_date),
+                        "hash": hash_,
+                        "query_id": query_id,
+                        "checkDataString": f"auth_date={auth_date}\nquery_id={query_id}\nuser={unquote(user_data)}",
+                        "user": {
+                            "id": user_data_dict["id"],
+                            "allows_write_to_pm": user_data_dict["allows_write_to_pm"],
+                            "first_name": user_data_dict["first_name"],
+                            "last_name": user_data_dict["last_name"],
+                            "username": user_data_dict.get("username", "Username gak diset"),
+                            "language_code": user_data_dict["language_code"],
+                            "version": "7.2",
+                            "platform": "ios"
+                        }
+                    }
+                },
+                "query": QUERY_LOGIN
+            }
+            async with session.post(url, headers=headers, json=data,proxy=proxies) as response:
+                try:
+                    json_response = await response.json()
+                    if 'errors' in json_response:
+                        return None
+                    else:
+                        access_token = json_response['data']['telegramUserLogin']['access_token']
+                        return access_token
+                except aiohttp.ContentTypeError:
+                    return None
+
+        # Cek akses token
+        async def cek_user():
+            json_payload = {
+                "operationName": "QueryTelegramUserMe",
+                "variables": {},
+                "query": QUERY_USER
+            }
+            async with session.post(url, headers=headers, json=json_payload,proxy=proxies) as response:
+                if response.status == 200:
+                    response_data = await response.json()
+                    if 'errors' in response_data:
+                        print(f" Gagal Query ID Salah")
+                        return None
+                    else:
+                        user_data = response_data['data']['telegramUserMe']
+                        return user_data  
+                else:
+                    print(response)
+                    print(f" Gagal dengan status {response.status}, mencoba lagi...")
+                    return None 
+        
+        async def submit_taps(total_tap):
+            
+            json_payload = {
+                "operationName": "MutationGameProcessTapsBatch",
+                "variables": {
+                    "payload": {
+                        "nonce": generate_random_nonce(),
+                        "tapsCount": total_tap
+                    }
+                },
+                "query": MUTATION_GAME_PROCESS_TAPS_BATCH
+            }
+            async with session.post(url, headers=headers, json=json_payload,proxy=proxies) as response:
+                if response.status == 200:
+                    response_data = await response.json()
+                    return response_data['data']  # Mengembalikan hasil response
+                else:
+                    print(f" Gagal Tap dengan status {response.status}, mencoba lagi...")
+                    return None  # Mengembalikan respons error
+
+        async def upgrade(upgrade_type):
+            json_payload = {
+                "operationName": "telegramGamePurchaseUpgrade",
+                "query": QUERY_UPGRADE,
+                "variables":{
+                    "upgradeType":upgrade_type
                 }
             }
-        },
-        "query": QUERY_LOGIN
-    }
-    return data
-            
-async def exec(profile):
-    profile_id=profile['id']
-    try:
-        query=profile['query']
-        # print_message(f'#{profile_id} {query}')
-        header = {'Accept': 'application/json', 'Accept-Language': 'en-US,en;q=0.9', 'Content-Type': 'application/json', 'Origin': 'https://tg-app.memefi.club', 'Referer': 'https://tg-app.memefi.club/', 'Sec-Ch-Ua': '"Google Chrome";v="123", "Not:A-Brand";v="8", "Chromium";v="123"', 'Sec-Ch-Ua-mobile': '?1', 'Sec-Ch-Ua-platform': '"Android"', 'Sec-Fetch-Dest': 'empty', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'same-site', 'User-Agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Mobile Safari/537.36'}
-        from helper.helper_client_session import ClientSession
-        async with ClientSession(proxy_url=profile['proxy']) as session:
-            print_message(f"#{profile_id} Checking new IP...")
-            response =await session.exec_get(url="https://httpbin.org/ip",headers={"content-type": "application/json"})
-            if response is None:
-                print_message(f"#{profile_id} Get new IP Failed")
-                return
-            else:
-                print_message(f"#{profile_id} New IP:{response['origin']}")
-
-            json_response=await session.exec_post(url, headers=header, data=create_payload_login(query))
-
-
-            # print_message(f"#{profile_id} {json_response}")
-            if "errors" in json_response:
-                error=json_response["errors"][0]["message"]
-                f = open("log_error.txt", "a")
-                f.write(f'\n{str(profile_id)}-{error}')
-                f.close()
-                return
-            
-            access_token = json_response['data']['telegramUserLogin']['access_token']
-            payload = {
-                "operationName": "QueryTelegramUserMe",
-                "variables": {},
-                "query": "query QueryTelegramUserMe {\n  telegramUserMe {\n    firstName\n    lastName\n    telegramId\n    username\n    referralCode\n    isDailyRewardClaimed\n    referral {\n      username\n      lastName\n      firstName\n      bossLevel\n      coinsAmount\n      __typename\n    }\n    isReferralInitialJoinBonusAvailable\n    league\n    leagueIsOverTop10k\n    leaguePosition\n    _id\n    opens {\n      isAvailable\n      openType\n      __typename\n    }\n    __typename\n  }\n}"
-                }
-            
-            header['Authorization']= f'Bearer {access_token}'
-
-            json_response=await session.exec_post(url, headers=header, data=payload)
-            print_message(f"#{profile_id} Id:{json_response['data']['telegramUserMe']['telegramId']}")    
-            current_energy = 0 
-            max_energy = 0
-            time_att = 1
-            att_dmg = 0
-            refill_amt = 3
-            current_coin = 0
-            current_boss_health= 1000
-            
-            
-            async def get_user_info()-> str:        
-                payload = {
-                "operationName": "QueryTelegramUserMe",
-                "variables": {},
-                "query": "query QueryTelegramUserMe {\n  telegramUserMe {\n    firstName\n    lastName\n    telegramId\n    username\n    referralCode\n    isDailyRewardClaimed\n    referral {\n      username\n      lastName\n      firstName\n      bossLevel\n      coinsAmount\n      __typename\n    }\n    isReferralInitialJoinBonusAvailable\n    league\n    leagueIsOverTop10k\n    leaguePosition\n    _id\n    opens {\n      isAvailable\n      openType\n      __typename\n    }\n    __typename\n  }\n}"
-                }
-                response_data = await session.exec_post(url, headers=header, data=payload)
-                data = response_data["data"]
-                key = next(iter(data)) 
-                print_message(f'#{profile_id} UserName: {data[key]["firstName"]+" " + data[key]["lastName"]}')
-                print_message(f'#{profile_id} UserId: {data[key]["telegramId"]}')
-                time.sleep(2)
-                
-            async def print_response(response_data:dict):
-                nonlocal current_energy
-                nonlocal att_dmg
-                nonlocal refill_amt
-                nonlocal max_energy
-                nonlocal current_coin
-                nonlocal current_boss_health
-                data = response_data["data"]
-                key = next(iter(response_data["data"]))            
-                current_energy = data[key]['currentEnergy']
-                max_energy = data[key]['maxEnergy']
-                current_coin = data[key]['coinsAmount']   
-                att_dmg = data[key]['weaponLevel'] +1
-                refill_amt = data[key]['freeBoosts']['currentRefillEnergyAmount'] 
-                current_boss_health  = data[key]['currentBoss']["currentHealth"]
-                if current_boss_health == 0:
-                    sleep(3,7)
-                    await move_to_next_boss()
-                    sleep(1,3)
-                    await get_game_config()            
-                print_message(f"#{profile_id} Current Coin: {format_number(current_coin)}, Energy: {current_energy}/{max_energy}. Recharge left: {refill_amt}") 
-                return data[key]['nonce']
-            
-            async def get_game_config()-> str:
-                print_message(f"#{profile_id} ===Getting Game Config===")
-                payload = {
+            async with session.post(url, headers=headers, json=json_payload,proxy=proxies) as response:
+                if response.status == 200:
+                    response_data = await response.json()
+                    print_message(f"✅ #{profile_id} Đã nâng {upgrade_type} thành công.")
+                    return response_data
+            print_message(f"❌ #{profile_id} Đã nâng {upgrade_type} thất bại")
+          
+        async def cek_stat():
+            json_payload = {
                 "operationName": "QUERY_GAME_CONFIG",
                 "variables": {},
-                "query": "query QUERY_GAME_CONFIG {\n  telegramGameGetConfig {\n    ...FragmentBossFightConfig\n    __typename\n  }\n}\n\nfragment FragmentBossFightConfig on TelegramGameConfigOutput {\n  _id\n  coinsAmount\n  currentEnergy\n  maxEnergy\n  weaponLevel\n  energyLimitLevel\n  energyRechargeLevel\n  tapBotLevel\n  currentBoss {\n    _id\n    level\n    currentHealth\n    maxHealth\n    __typename\n  }\n  freeBoosts {\n    _id\n    currentTurboAmount\n    maxTurboAmount\n    turboLastActivatedAt\n    turboAmountLastRechargeDate\n    currentRefillEnergyAmount\n    maxRefillEnergyAmount\n    refillEnergyLastActivatedAt\n    refillEnergyAmountLastRechargeDate\n    __typename\n  }\n  bonusLeaderDamageEndAt\n  bonusLeaderDamageStartAt\n  bonusLeaderDamageMultiplier\n  nonce\n  __typename\n}"
-                }        
-                response_data =await session.exec_post(url, headers=header, data=payload) 
-                last_id =await print_response(response_data =response_data)
-                time.sleep(3)    
-                return last_id
+                "query": QUERY_GAME_CONFIG
+            }
             
-            def get_date_format(date_str : str):
-                date_format = '%Y-%m-%dT%H:%M:%S.%fZ'
-                if date_str is None:
-                    return ""
-                else:
-                    return datetime.strptime(date_str, date_format) + timedelta (hours=7)
-            
-            
-            async def get_tapbot_config():        
-                print_message(f"#{profile_id}===Getting Tapbot Config===")
-                payload= {
-                "operationName": "TapbotConfig",
-                "variables": {},
-                "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nquery TapbotConfig {\n  telegramGameTapbotGetConfig {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
-                }
-                response_data =await session.exec_post(url, headers=header, data=payload)
-                data = response_data["data"]
-                key = next(iter(data))
-                is_purchase = data[key]["isPurchased"]
-                remain= data[key]["totalAttempts"] - data[key]["usedAttempts"]        
-                # current_coin = data[key]['coinsAmount']
-                end_at = get_date_format(data[key]["endsAt"])
-                format_print = "%H:%M %d/%m/%Y"
-                if not is_purchase:
-                    print_message(f"#{profile_id} TapBot is not purchased")
-                    if current_coin >= 200000:
-                        sleep(3,10)
-                        await tapbot_buying()
-                        sleep(3,5)
-                        await get_tapbot_config()
+            async with session.post(url, headers=headers, json=json_payload,proxy=proxies) as response:
+                if response.status == 200:
+                    response_data = await response.json()
+                    if 'errors' in response_data:
+                        return None
                     else:
-                        print(f"#{profile_id}===Not Enough Coin to buy TapBot===")
-                elif end_at == "":
-                    print_message(f"#{profile_id} TapBot is not activated")
-                    print_message(f"#{profile_id} TapBot remain time: {remain}")
-                    if remain > 0:
-                        sleep(3,10)
-                        await tapbot_activate()
-                        sleep(3,5)
-                        await get_tapbot_config()
-                else:
-                    print_message(f"#{profile_id} TapBot remain time: {remain}")
-                    print_message(f"#{profile_id} Tapbot claim time: {end_at}")
-                    if end_at <= datetime.now():
-                        sleep(3,10)
-                        await tapbot_claim()
-                        sleep(3,5)
-                        await get_tapbot_config()
+                        user_data = response_data['data']['telegramGameGetConfig']
+                        return user_data
                     
+                elif response.start == 500:
+                    return response
                 
-            async def tapbot_claim():
-                print_message(f"#{profile_id}===Claiming Tapbot===")
-                payload = {
-                "operationName": "TapbotClaim",
-                "variables": {},
-                "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nmutation TapbotClaim {\n  telegramGameTapbotClaimCoins {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
-                }
-                response_data = await session.exec_post(url, headers=header, data=payload)
-            
-            async def tapbot_activate():
-                print_message(f"#{profile_id}===Activating Tapbot===")
-                payload = {
-                "operationName": "TapbotStart",
-                "variables": {},
-                "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nmutation TapbotStart {\n  telegramGameTapbotStart {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
-                }
-                response_data = await session.exec_post(url, headers=header, data=payload)       
-                
-            async def tapbot_buying():
-                print_message(f"#{profile_id}===Buying Tapbot===")
-                payload = {
-                "operationName": "telegramGamePurchaseUpgrade",
-                "variables": {"upgradeType": "TapBot"},
-                "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nmutation TapbotStart {\n  telegramGameTapbotStart {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
-                }
-                response_data =await session.exec_post(url, headers=header, data=payload)
-            
-            async def move_to_next_boss():
-                print_message(f"#{profile_id}===Moving to Next Boss")
-                payload = {
+                else:
+                    print(response)
+                    print(f" Gagal dengan status {response.status}, mencoba lagi...")
+                    return None, None  
+
+        async def change_boss():
+            json_payload = {
                 "operationName": "telegramGameSetNextBoss",
                 "variables": {},
-                "query": "mutation telegramGameSetNextBoss {\n  telegramGameSetNextBoss {\n    ...FragmentBossFightConfig\n    __typename\n  }\n}\n\nfragment FragmentBossFightConfig on TelegramGameConfigOutput {\n  _id\n  coinsAmount\n  currentEnergy\n  maxEnergy\n  weaponLevel\n  energyLimitLevel\n  energyRechargeLevel\n  tapBotLevel\n  currentBoss {\n    _id\n    level\n    currentHealth\n    maxHealth\n    __typename\n  }\n  freeBoosts {\n    _id\n    currentTurboAmount\n    maxTurboAmount\n    turboLastActivatedAt\n    turboAmountLastRechargeDate\n    currentRefillEnergyAmount\n    maxRefillEnergyAmount\n    refillEnergyLastActivatedAt\n    refillEnergyAmountLastRechargeDate\n    __typename\n  }\n  bonusLeaderDamageEndAt\n  bonusLeaderDamageStartAt\n  bonusLeaderDamageMultiplier\n  nonce\n  __typename\n}"
-                }
-                response_data =await session.exec_post(url, headers=header, data=payload)
+                "query": QUERY_NEXT_BOSS
+            }
+            async with session.post(url, json=json_payload, headers=headers,proxy=proxies) as response:
+                if response.status == 200:
+                    print_message(f"✅ #{profile_id} Đã chuyển BOSS thành công.")
+                    return await response.json()
             
+            print_message(f"❌ #{profile_id} Đã chuyển BOSS thất bại.")
             
-            async def attack(last_id: str):
-                nonlocal time_att        
-                count_tap = random.randint(40, 120)
-                if count_tap * att_dmg > current_energy:
-                    count_tap = round(current_energy/att_dmg)-1
-                payload = {
-                    "operationName": "MutationGameProcessTapsBatch",
-                    "variables": {
-                        "payload": {
-                        "nonce": last_id,
-                        "tapsCount":  count_tap
-                        }
-                    },
-                    "query": "mutation MutationGameProcessTapsBatch($payload: TelegramGameTapsBatchInput!) {\n  telegramGameProcessTapsBatch(payload: $payload) {\n    ...FragmentBossFightConfig\n    __typename\n  }\n}\n\nfragment FragmentBossFightConfig on TelegramGameConfigOutput {\n  _id\n  coinsAmount\n  currentEnergy\n  maxEnergy\n  weaponLevel\n  energyLimitLevel\n  energyRechargeLevel\n  tapBotLevel\n  currentBoss {\n    _id\n    level\n    currentHealth\n    maxHealth\n    __typename\n  }\n  freeBoosts {\n    _id\n    currentTurboAmount\n    maxTurboAmount\n    turboLastActivatedAt\n    turboAmountLastRechargeDate\n    currentRefillEnergyAmount\n    maxRefillEnergyAmount\n    refillEnergyLastActivatedAt\n    refillEnergyAmountLastRechargeDate\n    __typename\n  }\n  bonusLeaderDamageEndAt\n  bonusLeaderDamageStartAt\n  bonusLeaderDamageMultiplier\n  nonce\n  __typename\n}"
-                }
-                response_data =await session.exec_post(url, headers=header, data=payload) 
-                print_message(f"#{profile_id} --Attack time: {time_att}, tap {count_tap} times")
-                last_id =await print_response(response_data =response_data)
-                time_att += 1
-                return last_id
 
-            async def action_attack(last_id):
-                while current_energy> att_dmg *10:
-                    last_id =await  attack(last_id)            
-                    sleep(9,15)
-            
-            async def get_recharge_boost():
-                nonlocal time_att  
-                print_message(f"#{profile_id}===Getting Boost===")
-                payload = {
-                "operationName": "telegramGameActivateBooster",
-                "variables": {
-                    "boosterType": "Recharge"
-                },
-                "query": "mutation telegramGameActivateBooster($boosterType: BoosterType!) {\n  telegramGameActivateBooster(boosterType: $boosterType) {\n    ...FragmentBossFightConfig\n    __typename\n  }\n}\n\nfragment FragmentBossFightConfig on TelegramGameConfigOutput {\n  _id\n  coinsAmount\n  currentEnergy\n  maxEnergy\n  weaponLevel\n  energyLimitLevel\n  energyRechargeLevel\n  tapBotLevel\n  currentBoss {\n    _id\n    level\n    currentHealth\n    maxHealth\n    __typename\n  }\n  freeBoosts {\n    _id\n    currentTurboAmount\n    maxTurboAmount\n    turboLastActivatedAt\n    turboAmountLastRechargeDate\n    currentRefillEnergyAmount\n    maxRefillEnergyAmount\n    refillEnergyLastActivatedAt\n    refillEnergyAmountLastRechargeDate\n    __typename\n  }\n  bonusLeaderDamageEndAt\n  bonusLeaderDamageStartAt\n  bonusLeaderDamageMultiplier\n  nonce\n  __typename\n}"
-                }
-                response_data =await session.exec_post(url, headers=header, data=payload)
-                last_id =await print_response(response_data=response_data)
-                time_att = 0
-                time.sleep(3)
-                return last_id
-            
-            try:
-                print_message(f"#{profile_id} *********************************************************")
-                        
-                await get_user_info()        
-                last_id = await get_game_config()
-                await action_attack(last_id)
-                while refill_amt>0:
-                    last_id = await get_recharge_boost()
-                    await action_attack(last_id)
-                    if time_att >=50 and current_energy == max_energy:
-                        print(f"#{profile_id} ===The is something wrong with the game===")
-                        return 
-                sleep(3,6)     
-                await get_tapbot_config() 
-                print_message(f"#{profile_id} *********************************************************")
+        async def start_bot():
+            url = "https://api-gw-tg.memefi.club/graphql"
+            json_payload = {
+                "operationName": "TapbotStart",
+                "variables": {},
+                "query": QUERY_BOT_START
+            }
+            async with session.post(url, json=json_payload, headers=headers,proxy=proxies) as response:
+                jsons = await response.json()
+                if response.status == 200:
+                    print_message(f"✅ #{profile_id} Đã start TAPBOT thành công.")
+                    return response
+            print_message(f"❌ #{profile_id} Đã start TAPBOT thất bại.")
 
+        async def claim_bot():
+            json_payload = {
+                "operationName": "TapbotClaim",
+                "variables": {},
+                "query": QUERY_BOT_CLAIM
+            }
+            async with session.post(url, json=json_payload, headers=headers,proxy=proxies) as response:
+                jsons = await response.json()
+                if response.status == 200:
+                    print_message(f"✅ #{profile_id} Đã claim TAPBOT thành công.")
+                    return response
+            print_message(f"❌ #{profile_id} Đã claim TAPBOT thất bại.")
+        
+        async def buy_bot():
+            json_payload = {
+                    "operationName": "telegramGamePurchaseUpgrade",
+                    "variables": {"upgradeType": "TapBot"},
+                    "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nmutation TapbotStart {\n  telegramGameTapbotStart {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
+                    }
+            async with session.post(url, json=json_payload, headers=headers,proxy=proxies) as response:
+                jsons = await response.json()
+                if response.status == 200:
+                    print_message(f"✅ #{profile_id} Đã mua TAPBOT thành công.")
+                    return jsons
+            print_message(f"❌ #{profile_id} Đã mua TAPBOT thất bại.")
+          
                 
-            except Exception as e:        
-                print(traceback.format_exc())
-                pass
-    except Exception as e:        
-        print_message(f'#{profile_id} ERROR............')
-        print(traceback.format_exc())
-        pass
+        async def apply_boost(boost_type):
+            json_payload = {
+                "operationName": "telegramGameActivateBooster",
+                "variables": {"boosterType" : boost_type},
+                "query": QUERY_BOOSTER
+            }
+            async with session.post(url, json=json_payload, headers=headers,proxy=proxies) as response:
+                if response.status == 200:
+                    print_message(f"✅ #{profile_id} Đã kích hoạt {boost_type} thành công.")
+                    return await response.json()
+            print_message(f"❌ #{profile_id} Đã kích hoạt {boost_type} thất bại.")
 
+        async def get_ip():
+          async with session.get("https://httpbin.org/ip", headers={"content-type": "application/json"}, proxy=proxies) as response:
+              if response.status in [200,201]:
+                  response_json= await response.json()
+                  return response_json           
+              else:
+                  print_message(f"❌ #{profile_id} Get new IP Failed")
+                  return
+        ip_data=await get_ip()
+        if ip_data is None:
+            return print_message(f"❌ #{profile_id} Lấy IP thất bại.")
+        profile_id=f'{profile.get("profile")}[{ip_data['origin']}]'          
+        access_token = await auth(profile["query"])
+        if access_token is None:
+            return print_message(f"❌ #{profile_id} Auth thất bại.")
+        
+        headers['Authorization'] = f'Bearer {access_token}'
+        result = await cek_user()
+        if result is not None:
+            first_name = result.get('firstName', 'Unknown')
+            last_name = result.get('lastName', 'Unknown')    
+        else:
+            return print_message(f"❌ #{profile_id} Load dữ liệu user thất bại.")
+        
+        stat_result = await cek_stat()
+
+        if stat_result is not None:
+            user_data = stat_result                
+            energy_sekarang = user_data['currentEnergy']
+            boost_energy_amount = user_data['freeBoosts']['currentRefillEnergyAmount']
+            boost_turbo_amount = user_data['freeBoosts']['currentTurboAmount']
+            boss_health = user_data['currentBoss']['currentHealth']
+            current_level_boss = user_data['currentBoss']['level']
+            
+            print_message(f"✅ #{profile_id} Balance : {user_data['coinsAmount']} | Energy : {user_data['currentEnergy']} - {user_data['maxEnergy']}")
+            async def get_tap_bot_config():
+                json_payload = {
+                    "operationName": "TapbotConfig",
+                    "variables": {},
+                    "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nquery TapbotConfig {\n  telegramGameTapbotGetConfig {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
+                }
+                async with session.post(url, json=json_payload, headers=headers,proxy=proxies) as response:
+                    if response.status == 200:
+                        response_data = await response.json()
+                        user_data = response_data['data']['telegramGameTapbotGetConfig']
+                        return user_data
+          
+
+            async def process_bot(current_balance):
+                tap_bot_config=await get_tap_bot_config()
+                is_purchase = tap_bot_config["isPurchased"]
+                if not is_purchase:
+                    if current_balance >= 200000:
+                        r=await buy_bot()
+                        if r is not None:
+                            return print_message(f"✅ #{profile_id} Mua BOT AFK thành công.")
+                        else:
+                            return print_message(f"❌ #{profile_id} Đã có lỗi xảy ra khi mua BOT AFK.")
+                    else:
+                        return print_message(f"❌ #{profile_id} Không đủ balance mua BOT AFK.")
+
+                def get_date_format(date_str : str):
+                    date_format = '%Y-%m-%dT%H:%M:%S.%fZ'
+                    if date_str is None:
+                        return ""
+                    else:
+                        return datetime.strptime(date_str, date_format) + timedelta (hours=7)
+                    
+                end_at = get_date_format(tap_bot_config["endsAt"])
+                if end_at == "":
+                    if tap_bot_config["totalAttempts"] - tap_bot_config["usedAttempts"]> 0:
+                        r= await start_bot()
+                        if r is not None:
+                            return print_message(f"✅ #{profile_id} ACTIVATE BOT AFK thành công.")
+                        else:
+                            return print_message(f"❌ #{profile_id} Đã có lỗi xảy ra khi ACTIVATE BOT AFK.")
+                    else:
+                        return print_message(f"✅ #{profile_id} Đã hết lượt ACTIVATE BOT AFK.")
+                else:
+                    if end_at <= datetime.now():
+                        await claim_bot()
+                    else:
+                        print_message(f"❌ #{profile_id} Chưa đến thời gian CLAIM BOT AFK. {end_at}")
+
+            await process_bot(user_data['coinsAmount'])
+            
+            if current_level_boss == 11:
+                print_message("❌ #{profile_id} đã max level boss", flush=True)
+                return
+            
+            print_message(f"✅ #{profile_id} Free Turbo : {user_data['freeBoosts']['currentTurboAmount']} Free Energy : {user_data['freeBoosts']['currentRefillEnergyAmount']}")
+            print_message(f"✅ #{profile_id} Boss level : {user_data['currentBoss']['level']} | Boss health : {user_data['currentBoss']['currentHealth']} - {user_data['currentBoss']['maxHealth']}")
+            for i in range(user_data.get("weaponLevel"),profile['dame_level']):
+                r=await upgrade("Damage")
+                
+
+            for i in range(user_data.get("energyLimitLevel"),profile['energy_level']):
+                r=await upgrade("EnergyCap")
+            # for i in range(user_data.get("energyRechargeLevel"),5):
+            #   await upgrade("EnergyCap")
+            if boss_health <= 0:
+                r=await change_boss()
+                if r is not None:
+                    print_message(f"✅ #{profile_id} Đã chuyển boss thành công.")
+                else:
+                    print_message(f"❌ #{profile_id} Đã chuyển boss thất bại")
+
+            async def farm():
+                while True:
+                    total_tap = random.randint(30, 100)
+                    respon = await submit_taps(total_tap)
+                    if respon is not None:
+                        energy = respon['telegramGameProcessTapsBatch']['currentEnergy']
+                        current_boss = respon['telegramGameProcessTapsBatch']['currentBoss']['currentHealth']
+                        print_message(f"✅ #{profile_id} Tap thành công.Năng lượng còn lại:{energy}.Máu boss còn lại:{current_boss}")
+                        if current_boss <= 0:
+                            await change_boss()
+
+                        if energy < 150:
+                            print_message(f"❌ #{profile_id} Năng lượng dưới 150.Tạm nghỉ")
+                            break                 
+                    else:
+                        print_message(f"❌ #{profile_id} Tap thất bại")
+                        break
+            
+            await farm()
+
+            for i  in range(boost_energy_amount):
+                await apply_boost("Recharge")
+                await farm()
+                time.sleep(3)
+
+            for i  in range(boost_turbo_amount):
+                boost_type = "Turbo"
+                await apply_boost(boost_type)
+                turbo_time = time.time()
+                total_tap = random.randint(100, 200)
+                while True:
+                    respon = await submit_taps(total_tap)   
+                    if respon is not None:
+                        print(f"Tapped")
+                        # print(respon)
+                        energy = respon['telegramGameProcessTapsBatch']['currentEnergy']
+                        current_boss = respon['telegramGameProcessTapsBatch']['currentBoss']['currentHealth']
+                        print_message(f"✅ #{profile_id} Tap thành công.Năng lượng còn lại:{energy}.Máu boss còn lại:{current_boss}")
+                    else:
+                        print_message(f"❌ #{profile_id} Tap thất bại")
+                        break
+                    
+                    if current_boss <= 0:
+                        await change_boss()
+                    if ((time.time() - turbo_time) > 10):
+                        turbo_time = 0
+                        break
+                
 
 async def limited_exec(semaphore, profile):
     async with semaphore:
         await exec(profile)
 
 async def main(count_process):
-    
-    df=pd.read_excel("account.xlsx",dtype={"query":str},sheet_name='memefi')
+    df=pd.read_excel("account.xlsx",dtype={"profile":str, "query":str,"dame_level":int,"energy_level":int},sheet_name='memefi')
     df=df[(~df['query'].isna()) & (df['query']!='')]
     if "proxy" not in df.columns:
             df["proxy"] = ""
     df['proxy']=df['proxy'].fillna('')
+    if "energy_level" not in df.columns:
+        df["energy_level"]=10
+    if "dame_level" not in df.columns:
+        df["dame_level"]=6
     
     profiles=[]
     for idx,row in df.iterrows():
         profile={
             "id":idx+1,
+            "profile":row["profile"],
             "query":row["query"],
-            "proxy":row["proxy"]
+            "proxy":row["proxy"],
+            "energy_level":row["energy_level"],
+            "dame_level":row["dame_level"]
         }
         profiles.append(profile)
         # await exec(profile)
@@ -325,36 +850,16 @@ async def main(count_process):
     await asyncio.gather(*tasks)
 
 if __name__=="__main__":
-    count_process=int(input("Enter count process:"))
+    count_process=int(input("Nhập số CPU:"))
+    delay=int(input("Nhập thời gian nghỉ(phút):"))
     while True:
-        asyncio.run(main(count_process))
-        time.sleep(60)
+        try:
+          asyncio.run(main(count_process))
+          for __second in range(delay*60, 0, -1):
+              sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
+              sys.stdout.flush()
+              time.sleep(1)
+        except Exception as e:
+            print_message(traceback.format_exc())
 
-# def main(delay_time):
-#     try:
-#         df=pd.read_excel("account.xlsx",dtype={"url":str},sheet_name='memefi')
-#         df=df[(~df['token'].isna()) & (df['token']!='')]
-#         df.reset_index(inplace=True)
-#         if "list_upgrade" not in df.columns:
-#             df["list_upgrade"] = ""
-#         if "proxy" not in df.columns:
-#             df["proxy"] = ""
-#         df['proxy']=df['proxy'].fillna('')
-#         for idx,row in df.iterrows():
-#             exec("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7Il9pZCI6IjY2NWRkN2JkNDgxMjkwOTJkZjlkNjgwMSIsInVzZXJuYW1lIjoiam9uMTEwOCJ9LCJzZXNzaW9uSWQiOiI2NjYzMDlkYjM3YWEzZjk4OWVkNjlhOWMiLCJzdWIiOiI2NjVkZDdiZDQ4MTI5MDkyZGY5ZDY4MDEiLCJpYXQiOjE3MTc3NjY2MTksImV4cCI6MTcxODM3MTQxOX0.X4Z2_y3Knwq3-TmZXylSlq9hyOviRJgpvDzsB6UfeDc"
-#                 #  ,row['token'],
-#                  ,proxy_url=""
-#                  #row['proxy'])
-#             )
-#             time.sleep(10)
-            
-#         time.sleep(delay_time)
-#     except Exception as e:
-#         print(e)
 
-# if __name__=='__main__':
-#     while True:
-#         try:
-#             main(delay_time=120)                      
-#         except Exception as e:
-#             print(e)
