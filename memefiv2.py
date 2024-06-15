@@ -837,7 +837,7 @@ fragment FragmentBossFightConfig on TelegramGameConfigOutput {
                 else:
                     print_message(f"❌ #{profile_id} Tap thất bại")
                     break
-                time.sleep(2) 
+                time.sleep(4) 
         await farm()
 
         #giải mật mã
