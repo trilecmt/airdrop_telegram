@@ -834,7 +834,7 @@ fragment FragmentBossFightConfig on TelegramGameConfigOutput {
                     if current_boss <= 0:
                           r=await change_boss()
                           if r==False:
-                              break
+                              return False
 
                     if energy < 150:
                         print_message(f"❌ #{profile_id} Năng lượng dưới 150.Tạm nghỉ")
@@ -843,11 +843,10 @@ fragment FragmentBossFightConfig on TelegramGameConfigOutput {
                     print_message(f"❌ #{profile_id} Tap thất bại")
                     break
                 time.sleep(4) 
-        await farm()
 
-        #giải mật mã
-
-
+        r=await farm()
+        if r==False:
+            return print_message(f"❌ #{profile_id} Nâng boss gặp lỗi. Move next")
         for i  in range(boost_energy_amount):
             await apply_boost("Recharge")
             await farm()
