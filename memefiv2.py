@@ -607,8 +607,14 @@ async def exec(profile):
             }
             async with session.post(url, json=json_payload, headers=headers,proxy=proxies) as response:
                 if response.status == 200:
-                    print_message(f"✅ #{profile_id} Đã chuyển BOSS thành công.")
-                    return await response.json()
+                    r=await response.json()
+                    if "errors" in r:
+                        print_message(f"❌ #{profile_id} Đã chuyển BOSS thất bại.Lỗi {r.get('errors')[0]['message']}")
+                        return False
+                    else:
+                      print_message(f"✅ #{profile_id} Đã chuyển BOSS thành công.")
+                      return True
+            return False
             
             print_message(f"❌ #{profile_id} Đã chuyển BOSS thất bại.")
             
@@ -814,14 +820,10 @@ fragment FragmentBossFightConfig on TelegramGameConfigOutput {
             r=await upgrade("EnergyCap")
         
         if boss_health <= 0:
-            r=await change_boss()
-            if r is not None:
-                print_message(f"✅ #{profile_id} Đã chuyển boss thành công.")
-            else:
-                print_message(f"❌ #{profile_id} Đã chuyển boss thất bại")
+            await change_boss()
+          
 
         async def farm():
-            is_change_boss=False
             while True:
                 total_tap = random.randint(10, 50)
                 respon = await submit_taps(total_tap)
@@ -830,13 +832,9 @@ fragment FragmentBossFightConfig on TelegramGameConfigOutput {
                     current_boss = respon['telegramGameProcessTapsBatch']['currentBoss']['currentHealth']
                     print_message(f"✅ #{profile_id} Tap thành công.Năng lượng còn lại:{energy}.Máu boss còn lại:{current_boss}")
                     if current_boss <= 0:
-                        if is_change_boss==False:
-                          await change_boss()
-                          is_change_boss=True
-                        else:
-                            print_message(f"❌ #{profile_id} Không thể move BOSS.Tạm nghỉ")
-                            break
-
+                          r=await change_boss()
+                          if r==False:
+                              break
 
                     if energy < 150:
                         print_message(f"❌ #{profile_id} Năng lượng dưới 150.Tạm nghỉ")
