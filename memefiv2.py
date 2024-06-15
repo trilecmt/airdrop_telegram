@@ -806,7 +806,7 @@ fragment FragmentBossFightConfig on TelegramGameConfigOutput {
         
         # print_message(f"✅ #{profile_id} Free Turbo : {user_data['freeBoosts']['currentTurboAmount']} Free Energy : {user_data['freeBoosts']['currentRefillEnergyAmount']}")
         # print_message(f"✅ #{profile_id} Boss level : {user_data['currentBoss']['level']} | Boss health : {user_data['currentBoss']['currentHealth']} - {user_data['currentBoss']['maxHealth']}")
-        for i in range(user_data.get("energyRechargeLevel"),5):
+        for i in range(user_data.get("energyRechargeLevel"),3):
             r=await upgrade("EnergyRechargeRate")
         for i in range(user_data.get("weaponLevel"),profile['dame_level']):
             r=await upgrade("Damage")
