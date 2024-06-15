@@ -719,7 +719,7 @@ fragment FragmentBossFightConfig on TelegramGameConfigOutput {
         ip_data=await get_ip()
         if ip_data is None:
             return print_message(f"❌ #{profile_id} Lấy IP thất bại.")
-        profile_id=f'{profile.get("profile")}[{ip_data['origin']}]'          
+        profile_id=f"{profile.get('profile')}[{ip_data['origin']}]"          
         access_token = await auth(profile["query"])
         if access_token is None:
             return print_message(f"❌ #{profile_id} Auth thất bại.")
