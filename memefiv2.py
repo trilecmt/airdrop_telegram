@@ -822,7 +822,7 @@ fragment FragmentBossFightConfig on TelegramGameConfigOutput {
 
         async def farm():
             while True:
-                total_tap = random.randint(30, 100)
+                total_tap = random.randint(10, 50)
                 respon = await submit_taps(total_tap)
                 if respon is not None:
                     energy = respon['telegramGameProcessTapsBatch']['currentEnergy']
