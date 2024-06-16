@@ -14,7 +14,8 @@ from datetime import datetime, timedelta
 from urllib.parse import unquote
 from helper.utils import print_message, sleep, format_number
 from helper import utils
-TODAY_VECTOR="1,4,1,4".replace(" ","")
+
+TODAY_VECTOR="1,4,1,1,1".replace(" ","")
 headers_set = {
         'Accept': 'application/json',
         'Accept-Language': 'en-US,en;q=0.9',
