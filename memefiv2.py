@@ -471,8 +471,6 @@ def generate_random_nonce(length=52):
 
 async def exec(profile): 
     try:
-          
-        
       headers = headers_set.copy()
       proxies=utils.get_proxies(profile["proxy"],type=0)
       profile_id=""
@@ -876,7 +874,7 @@ async def exec(profile):
                       break
                   time.sleep(2) 
     except Exception as e:
-          print_message(f"❌ Lỗi khi xử lí profile {profile['name']}")
+          print_message(f"❌ Lỗi khi xử lí profile {profile['profile']}")
           print_message(traceback.format_exc())
     finally:
         print_message(f"✅ #{profile_id} Kết thúc")
