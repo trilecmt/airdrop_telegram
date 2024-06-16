@@ -830,7 +830,7 @@ async def exec(profile):
                   if respon is not None:
                       energy = respon['telegramGameProcessTapsBatch']['currentEnergy']
                       current_boss = respon['telegramGameProcessTapsBatch']['currentBoss']['currentHealth']
-                      print_message(f"✅ #{profile_id} Tap thành công.Năng lượng còn lại:{energy}.Máu boss còn lại:{current_boss}")
+                      print_message(f"✅ #{profile_id} {i+1}/20 Tap thành công.Năng lượng còn lại:{energy}.Máu boss còn lại:{current_boss}")
                       if current_boss <= 0:
                             r=await change_boss()
                             if r==False:
