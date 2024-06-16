@@ -882,7 +882,7 @@ async def limited_exec(semaphore, profile):
             print_message(traceback.format_exc())
             
 
-async def main(count_process):
+async def main(count_process,delay):
     print_message("Next round...")
     df=pd.read_excel("account.xlsx",dtype={"profile":str, "query":str,"dame_level":int,"energy_level":int},sheet_name='memefi')
     df=df[(~df['query'].isna()) & (df['query']!='')]
@@ -909,17 +909,17 @@ async def main(count_process):
     semaphore = asyncio.Semaphore(count_process)  # Limit to 5 concurrent tasks
     tasks = [limited_exec(semaphore, profile) for profile in profiles]
     await asyncio.gather(*tasks)
+    for __second in range(delay*60, 0, -1):
+          sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
+          sys.stdout.flush()
+          time.sleep(1)
 
 if __name__=="__main__":
     count_process=int(input("Nhập số CPU:"))
     delay=int(input("Nhập thời gian nghỉ(phút):"))
     while True:
         try:
-          asyncio.run(main(count_process))
-          for __second in range(delay*60, 0, -1):
-              sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
-              sys.stdout.flush()
-              time.sleep(1)
+          asyncio.run(main(count_process,delay))        
         except Exception as e:
             print_message(traceback.format_exc())
 
