@@ -824,13 +824,13 @@ async def exec(profile):
             
 
           async def farm():
-              for i in range(20):
-                  total_tap = random.randint(10, 50)
+              for i in range(10):
+                  total_tap = random.randint(30, 50)
                   respon = await submit_taps(total_tap)
                   if respon is not None:
                       energy = respon['telegramGameProcessTapsBatch']['currentEnergy']
                       current_boss = respon['telegramGameProcessTapsBatch']['currentBoss']['currentHealth']
-                      print_message(f"✅ #{profile_id} {i+1}/20 Tap thành công.Năng lượng còn lại:{energy}.Máu boss còn lại:{current_boss}")
+                      print_message(f"✅ #{profile_id} {i+1}/10 Tap thành công.Năng lượng còn lại:{energy}.Máu boss còn lại:{current_boss}")
                       if current_boss <= 0:
                             r=await change_boss()
                             if r==False:
@@ -842,7 +842,7 @@ async def exec(profile):
                   else:
                       print_message(f"❌ #{profile_id} Tap thất bại")
                       break
-                  time.sleep(3) 
+                  time.sleep(2) 
 
           r=await farm()
           if r==False:
