@@ -825,7 +825,7 @@ async def exec(profile):
             
 
           async def farm():
-              while True:
+              for i in range(20):
                   total_tap = random.randint(10, 50)
                   respon = await submit_taps(total_tap)
                   if respon is not None:
@@ -843,7 +843,7 @@ async def exec(profile):
                   else:
                       print_message(f"❌ #{profile_id} Tap thất bại")
                       break
-                  time.sleep(4) 
+                  time.sleep(3) 
 
           r=await farm()
           if r==False:
