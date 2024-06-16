@@ -888,18 +888,19 @@ async def limited_exec(semaphore, profile):
 async def main(count_process,delay):
     print_message("Next round...")
     df=pd.read_excel("account.xlsx",dtype={"profile":str, "query":str,"dame_level":int,"energy_level":int,"vector":str},sheet_name='memefi')
-    df=df[(~df['query'].isna()) & (df['query']!='')]
     if "proxy" not in df.columns:
             df["proxy"] = ""
     if "vector" not in df.columns:
             df["vector"] = ""
     df['proxy']=df['proxy'].fillna('')
+    df['vector']=df['vector'].fillna('')
     if "energy_level" not in df.columns:
         df["energy_level"]=10
     if "dame_level" not in df.columns:
         df["dame_level"]=6
-    
     vector=df["vector"].iat[0]
+    df=df[(~df['query'].isna()) & (df['query']!='')]
+
     profiles=[]
     for idx,row in df.iterrows():
         profile={
