@@ -30,7 +30,7 @@ url_check_in = "https://api.hamsterkombat.io/clicker/check-task"
 url_claim_daily_cipher = "https://api.hamsterkombat.io/clicker/claim-daily-cipher"
 
 def get_daily_cards():
-    url = 'https://raw.githubusercontent.com/trilecmt/airdrop_telegram/main/resources/hamster_daily_cards.json'
+    url = 'https://www.myjsons.com/v/hamster_daily_cards'
     f = requests.get(url)
     data = f.json()
     now=(datetime.datetime.utcnow()+datetime.timedelta(hours=7))
