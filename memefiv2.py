@@ -506,16 +506,15 @@ async def exec(profile):
                   },
                   "query": QUERY_LOGIN
               }
-              async with session.post(url, headers=headers, json=data,proxy=proxies) as response:
-                  try:
-                      json_response = await response.json()
-                      if 'errors' in json_response:
-                          return None
-                      else:
-                          access_token = json_response['data']['telegramUserLogin']['access_token']
-                          return access_token
-                  except aiohttp.ContentTypeError:
-                      return None
+              try:
+                async with session.post(url, headers=headers, json=data,proxy=proxies) as response:
+                    json_response = await response.json()
+                    if 'errors' not in json_response:
+                        access_token = json_response['data']['telegramUserLogin']['access_token']
+                        return access_token
+              except Exception as e:
+                  return None
+              
 
           # Cek akses token
           async def cek_user():
