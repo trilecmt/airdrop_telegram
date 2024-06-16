@@ -15,7 +15,7 @@ from urllib.parse import unquote
 from helper.utils import print_message, sleep, format_number
 from helper import utils
 
-TODAY_VECTOR="1,4,1,1".replace(" ","")
+
 headers_set = {
         'Accept': 'application/json',
         'Accept-Language': 'en-US,en;q=0.9',
@@ -741,15 +741,15 @@ async def exec(profile):
               return print_message(f"❌ #{profile_id} Load dữ liệu game thất bại.")
 
           before_amount= user_data['coinsAmount']
-          await submit_taps(vector=TODAY_VECTOR)
+          await submit_taps(vector=profile["vector"])
           user_data = await cek_stat()
           if user_data is None:
               return print_message(f"❌ #{profile_id} Load dữ liệu game thất bại.")
           after_amount=user_data['coinsAmount']
           if after_amount-before_amount>=1_000_000:
-              print_message(f"✅ #{profile_id} Giải mật mã thành công.Trước {before_amount} Sau {after_amount}")
+              print_message(f"✅ #{profile_id} Giải mật mã {profile['vector']} thành công.Trước {before_amount} Sau {after_amount}")
           else:
-              print_message(f"❌ #{profile_id} Giải mật mã thất bại..Trước {before_amount} Sau {after_amount}")
+              print_message(f"❌ #{profile_id} Giải mật mã {profile['vector']} thất bại..Trước {before_amount} Sau {after_amount}")
 
           boost_energy_amount = user_data['freeBoosts']['currentRefillEnergyAmount']
           boost_turbo_amount = user_data['freeBoosts']['currentTurboAmount']
@@ -887,16 +887,19 @@ async def limited_exec(semaphore, profile):
 
 async def main(count_process,delay):
     print_message("Next round...")
-    df=pd.read_excel("account.xlsx",dtype={"profile":str, "query":str,"dame_level":int,"energy_level":int},sheet_name='memefi')
+    df=pd.read_excel("account.xlsx",dtype={"profile":str, "query":str,"dame_level":int,"energy_level":int,"vector":str},sheet_name='memefi')
     df=df[(~df['query'].isna()) & (df['query']!='')]
     if "proxy" not in df.columns:
             df["proxy"] = ""
+    if "vector" not in df.columns:
+            df["vector"] = ""
     df['proxy']=df['proxy'].fillna('')
     if "energy_level" not in df.columns:
         df["energy_level"]=10
     if "dame_level" not in df.columns:
         df["dame_level"]=6
     
+    vector=df["vector"].iat[0]
     profiles=[]
     for idx,row in df.iterrows():
         profile={
@@ -905,7 +908,8 @@ async def main(count_process,delay):
             "query":row["query"],
             "proxy":row["proxy"],
             "energy_level":row["energy_level"],
-            "dame_level":row["dame_level"]
+            "dame_level":row["dame_level"],
+            "vector":vector
         }
         profiles.append(profile)
         # await exec(profile)
