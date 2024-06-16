@@ -236,13 +236,20 @@ def exec(profile):
                 print_message(f"❌ #{profile_id} Bought card {condition_card['name']} failed due to Expired")
                 return False
             if condition_card['isAvailable']==True:
-                while condition_card["level"] < condtion["level"]:
+                count=1
+                for i in range(condition_card["level"],condtion["level"]):
+                    if count>10:
+                        break
+                    count+=1
                     get_user_data(is_need_user_info=False) #get balance again
                     if balance > condition_card['price']:
                         response_info = buy_card(condition_card['id']) 
-                        sleep(2)
-                        print_message(f"#❌ {profile_id} Buy condition card {condition_card['name']} level {condition_card['level']} success with price {format_number( condition_card['price'])}")
-                        condition_card = [item for item in list_upgrade_cards if item['id'] == condtion["upgradeId"]][0] #get new level of condition card in the loop
+                        if response_info is None:
+                            print_message(f"❌ #{profile_id} Buy condition card {condition_card['name']} level {condition_card['level']} failed")
+                            break
+                        else:
+                            print_message(f"#✅ {profile_id} Buy condition card {condition_card['name']} level {condition_card['level']} success with price {format_number( condition_card['price'])}")
+                            condition_card = [item for item in list_upgrade_cards if item['id'] == condtion["upgradeId"]][0] #get new level of condition card in the loop
                     else:
                         print_message(f"❌ #{profile_id} Buy condition card {condition_card['name']} level {condition_card['level']} failed because not enough money: price {format_number( condition_card['price'])}")
                         return False
@@ -366,9 +373,9 @@ def main(delay_time,count_processes=1):
         for idx,row in df.iterrows():
             profile={
                 "id":idx+1,
-                "token":row['token'],
+                "token":"1718157824624ALuBYqYtjTWRXzGEL4mwvihsHPdQRETdtv8uwFmSbytfYXqV1oefWuGtCAS4QKJB7051026400",#row['token'],
                 "list_upgrade":row['list_upgrade'],
-                "proxy_url":row['proxy'],
+                "proxy_url":"215-ddns.vinaproxy.com:51146:0806blzmqb:0806blzmqb",# row['proxy'],
                 "limit_buy_card":row['limit_buy_card'],
                 "daily_combo_cards_today":daily_combo_cards_today,
                 "cipher":cipher
