@@ -875,7 +875,12 @@ fragment FragmentBossFightConfig on TelegramGameConfigOutput {
 
 async def limited_exec(semaphore, profile):
     async with semaphore:
-        await exec(profile)
+        try:
+          await exec(profile)
+        except Exception as e:
+            print_message(f"❌ Lỗi khi xử lí profile {profile['name']}")
+            print_message(traceback.format_exc())
+            
 
 async def main(count_process):
     df=pd.read_excel("account.xlsx",dtype={"profile":str, "query":str,"dame_level":int,"energy_level":int},sheet_name='memefi')
