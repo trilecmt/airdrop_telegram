@@ -883,6 +883,7 @@ async def limited_exec(semaphore, profile):
             
 
 async def main(count_process):
+    print_message("Next round...")
     df=pd.read_excel("account.xlsx",dtype={"profile":str, "query":str,"dame_level":int,"energy_level":int},sheet_name='memefi')
     df=df[(~df['query'].isna()) & (df['query']!='')]
     if "proxy" not in df.columns:
