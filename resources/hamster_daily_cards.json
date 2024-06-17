@@ -1,4 +1,8 @@
 [ {
+    "date":"20240616",
+    "cards": ["Derivatives","Prediction markets","Licence Japan"],
+    "cipher":"TOKEN"
+},{
     "date":"20240614",
     "cards": ["GameFi tokens","Margin trading x30","Trading bots"],
     "cipher":"GAMEFI"
