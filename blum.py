@@ -19,6 +19,7 @@ from helper.helper_schedule import ScheduleDB
 schedule=ScheduleDB()
 
 def exec(profile):  
+    print_message(f"#{profile['name']} Start")
     try:
         with MySession() as session:
             session.set_proxy(profile['proxy'])
