@@ -20,9 +20,29 @@ from helper.utils import print_message
 init(autoreset=True)
 
 GAME='PIXELVERS'
+PET={
+    "1":"0a6306e5-cc33-401a-9664-a872e3eb2b71",
+    "2":"571523ae-872d-49f0-aa71-53d4a41cd810",
+    "3":"78e0146f-0dfb-4af8-a48d-4033d3efdd39",
+    "4":"7c3a95c6-75a3-4c62-a20e-896a21132060",
+    "5":"8074e9c5-f6c2-4012-bfa2-bcc98ceb5175",
+    "6":"d364254e-f22f-4a43-9a1c-5a7c71ea9ecd",
+    "7":"dc5236dc-06be-456b-a311-cccedbd213ca",
+    "8":"e8c505ed-df93-47e0-bd2e-0e664d09ba86",
+    "9":"ef0adeca-be18-4503-9e9a-d93c22bd7a6e",
+    "10":"f097634a-c8e8-4de9-b707-575d20c5fd88",
+    "11":"50e9e942-36d5-4f19-9bb7-c892cb956fff",
+    "12":"7ee9ed52-c808-4187-a942-b53d972cd399",
+    "13":"36621a17-81f3-4d5d-b4e1-4b0cf51d4610",
+    "14":"90a07a32-431a-4299-be59-598180ee4a8c",
+    "15":"45f2e16e-fb64-4e15-a3fa-2fb99c8d4a04",
+    "16":"3bfab57c-a57f-48d9-8819-c93c9f531478",
+    "17":"341195b4-f7d8-4b9c-a8f1-448318f32e8e",
+    "18":"bc3f938f-8f4c-467b-a57d-2b40cd500f4b",
+    "19":"f82a3b59-913d-4c57-8ffd-9ac954105e2d",
+    "20":"d59cd843-1b53-4131-9966-641d41aa634b",
+}
 
-from helper.helper_schedule import ScheduleDB
-schedule=ScheduleDB()
 
 merah = Fore.LIGHTRED_EX
 hijau = Fore.LIGHTGREEN_EX
@@ -63,13 +83,13 @@ class PixelTod:
     def data_parsing(self, data):
         return {key: value for key, value in (i.split('=') for i in unquote(data).split('&'))}
 
-    def process_account(self, data, id_pets:str):
+    def process_account(self, data, id_pets:list):
         self.get_me(data)
         self.daily_reward(data)
         self.get_mining_proccess(data)
         self.auto_buy_pet(data)
         self.auto_upgrade_pet(data)
-        if id_pets!="":
+        if id_pets is not None and len(id_pets)==4:
              self.daily_combo(data, id_pets)
             
     def api_call(self, url, data=None, headers=None, method='GET'): 
@@ -154,7 +174,7 @@ class PixelTod:
                     claim_amount = claim_response.get('claimedAmount', 'N/A')
                     self.log(f'{hijau}Claim amount : {putih}{claim_amount}')
                 else:
-                    self.log(f'{merah}Empty response from claim API.')
+                    self.log(f'{merah}Empty response from claim API. {res.status_code}')
             else:
                 self.log(f'{kuning}Amount too small to make claim !')
         else:
@@ -284,21 +304,25 @@ def limited_exec(semaphore, profile):
 
 def main(delay):
     try:
-        df=pd.read_excel("account.xlsx",dtype={"query":str,"profile":str,"daily_combo":str},sheet_name='pixelvers')
+        code=utils.get_daily_code()
+        uid_codes=None
+        if code is not None:
+            vectors=code.get("comboPixel",None)   
+            if vectors is not None:
+                uid_codes=[PET[code] for code in str(vectors).split(",")]
+        df=pd.read_excel("account.xlsx",dtype={"query":str,"profile":str},sheet_name='pixelvers')
         df=df[(~df['query'].isna()) & (df['query']!='')]
-        for col in ['proxy','daily_combo']:
+        for col in ['proxy']:
             if col not in df.columns:
                 df[col] = ""
             df[col]=df[col].fillna('')
-        daily_combo=df["daily_combo"].iat[0]
-        profiles=[]
         for idx,row in df.iterrows():
             profile={
                 "id":idx+1,
                 "name":row['profile'],
                 "query":row["query"],
                 "proxy":row["proxy"],
-                "daily_combo":daily_combo
+                "daily_combo":uid_codes
             }
             exec(profile)
         #     profiles.append(profile)
