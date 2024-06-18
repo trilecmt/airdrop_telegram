@@ -10,9 +10,9 @@ from colorama import init, Fore, Style
 init(autoreset=True)
 GAME='TIMEFARM'
 
-from helper.helper_schedule import ScheduleDB
+# from helper.helper_schedule import ScheduleDB
 
-schedule=ScheduleDB()
+# schedule=ScheduleDB()
 
 headers={
   'Accept': '*/*',
@@ -52,12 +52,12 @@ def exec(profile):
                 if response is None:
                     return print_message(f"❌ #{profile_id} Start farm failed.Move next...")  
                 claim_time=datetime.strptime(response['activeFarmingStartedAt'], "%Y-%m-%dT%H:%M:%S.%fZ")+ timedelta(seconds=response['farmingDurationInSec'])
-                schedule.update_profile(
-                    game=GAME,
-                    profile_name=profile["name"],
-                    latest_run_date=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                    next_run_date=claim_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-                )
+                # schedule.update_profile(
+                #     game=GAME,
+                #     profile_name=profile["name"],
+                #     latest_run_date=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                #     next_run_date=claim_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                # )
                 print_message(f"✅ #{profile_id} Claim farm and restart success.Move next...")          
             
             response=session.exec_post(f'{URL}/auth/validate-init', headers=headers, data=profile['query'],is_convert_dump_json=False)
@@ -73,12 +73,12 @@ def exec(profile):
                 return start_farm()      
             claim_time=datetime.strptime(response['activeFarmingStartedAt'], "%Y-%m-%dT%H:%M:%S.%fZ")+ timedelta(seconds=response['farmingDurationInSec'])
             if claim_time>datetime.utcnow():
-                schedule.update_profile(
-                    game=GAME,
-                    profile_name=profile["name"],
-                    latest_run_date=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                    next_run_date=(claim_time).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-                )
+                # schedule.update_profile(
+                #     game=GAME,
+                #     profile_name=profile["name"],
+                #     latest_run_date=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                #     next_run_date=(claim_time).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                # )
                 return print_message(f"❌ #{profile_id} Next claim at {claim_time+timedelta(hours=7)}.Move next...")   
                
             else:
@@ -86,8 +86,7 @@ def exec(profile):
             
     except Exception as e:        
         print_message(f'#{profile_id} ERROR............')
-        print(traceback.format_exc())
-        pass
+        print_message(traceback.format_exc())
 
 
 
@@ -105,16 +104,16 @@ def main():
             "query":row["query"],
             "proxy":row["proxy"]
         }
-        db_profile=schedule.get_profile(game=GAME, profile_name=profile['name'])
-        if db_profile is None or  db_profile["next_run_date"] < (datetime.utcnow()):
-            exec(profile)
+        exec(profile)
 
 
 if __name__=="__main__":
     print_welcome(game=GAME)
+    delay=int(input("Nhập số phút nghỉ:"))
     while True:
         main()       
-        for __second in range(60, 0, -1):
+        for __second in range(delay*60, 0, -1):
             sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
             sys.stdout.flush()
             time.sleep(1)
+        sys.stdout.write("")
