@@ -4,10 +4,25 @@ import time
 import datetime
 import configparser
 import warnings
+
+import requests
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 def print_welcome(game):
     print(f"Welcome to {game}")
+
+
+
+def get_daily_code():
+    url = 'https://www.myjsons.com/v/hamster_daily_cards'
+    f = requests.get(url)
+    data = f.json()
+    now=(datetime.datetime.utcnow()+datetime.timedelta(hours=7))
+    _data=[item for item in data if item['date']==now.strftime("%Y%m%d")]
+    if len(_data)==0:
+        return None
+    return data[0]
+
 
 def get_proxies(proxy_url,type):
     
