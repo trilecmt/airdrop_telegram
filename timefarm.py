@@ -137,12 +137,17 @@ def main():
 
 
 if __name__=="__main__":
-    print_welcome(game=GAME)
-    delay=int(input("Nhập số phút nghỉ:"))
-    while True:
-        main()       
-        for __second in range(delay*60, 0, -1):
-            sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
-            sys.stdout.flush()
-            time.sleep(1)
-        sys.stdout.write("")
+    try:
+        print_welcome(game=GAME)
+        delay=int(input("Nhập số phút nghỉ:"))
+        while True:
+            main()       
+            for __second in range(delay*60, 0, -1):
+                sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
+                sys.stdout.flush()
+                time.sleep(1)
+            sys.stdout.write("")
+    except KeyboardInterrupt:
+        exit()
+    except:
+        print_message(traceback.format_exc())
