@@ -238,7 +238,7 @@ class PixelTod:
                 available_options = game_data.get('options', [])
                 pet_id_index_map = {option["optionId"]: len(available_options) - option["order"] - 1 for option in available_options}
 
-                id_pets = [pet_id.strip() for pet_id in id_pets.split(",")]
+                id_pets = [pet_id.strip() for pet_id in id_pets]
                 payload = {pet_id: len(id_pets) - id_pets.index(pet_id) - 1 for pet_id in id_pets}
 
                 url_answer = f"https://api-clicker.pixelverse.xyz/api/cypher-games/{game_id}/answer"
@@ -283,7 +283,7 @@ def exec(profile):
         if response.status_code!=200:
             return print_message(f"❌ #{profile['name']} Proxy không lấy được IP")
         data= response.json()
-        app.profile_id=f"{profile["name"]}[{data['origin']}]"   
+        app.profile_id=f"{profile['name']}[{data['origin']}]"   
         data_parse = app.data_parsing(profile['query'])
         user = json.loads(data_parse['user'])
         userid = str(user['id'])
