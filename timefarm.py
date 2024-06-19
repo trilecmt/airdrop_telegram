@@ -35,13 +35,16 @@ headers={
                 
 URL='https://tg-bot-tap.laborx.io/api/v1' 
 
+def format_money(value):
+    return f"{int(value):,d}"
+
 def exec(profile):
     profile_id=profile['id']
     try:
         with MySession() as session:
             def start_farm():
                 response=session.exec_post(f'{URL}/farming/start', headers=headers, data={})
-                print_message(f"✅ #{profile_id} Start farm Sucess") 
+                print_message(f"✅ #{profile_id} Start farm success") 
                 return response
             
             def claim():
@@ -60,13 +63,39 @@ def exec(profile):
                 # )
                 print_message(f"✅ #{profile_id} Claim farm and restart success.Move next...")          
             
-            response=session.exec_post(f'{URL}/auth/validate-init', headers=headers, data=profile['query'],is_convert_dump_json=False)
-            if response is None:
-                return print_message(f"❌ #{profile_id} Auth failed.Move next...")    
-            headers['Authorization']="Bearer "+response['token']
+            response_auth=session.exec_post(f'{URL}/auth/validate-init', headers=headers, data=profile['query'],is_convert_dump_json=False)
+            if response_auth is None:
+                return print_message(f"❌ #{profile_id} Auth failed.Move next...")  
+            print_message(f"✅ #{profile_id} Login success.Main balance:{format_money(response_auth['balanceInfo']['balance'])}. Ref balance:{format_money(response_auth['balanceInfo']['referral'].get('availableBalance',0))}")   
+            headers['Authorization']="Bearer "+response_auth['token']
             if "Content-Length" in headers:
                 del headers['Content-Length']
-            response=session.exec_get(f'{URL}/farming/info', headers=headers,log=True)
+            level_descriptions=response_auth.get("levelDescriptions",None)
+            current_factor=response_auth['farmingInfo']['farmingReward']/response_auth['farmingInfo']['farmingDurationInSec']
+
+            if level_descriptions is not None:
+                for level_description in level_descriptions:
+                    if level_description.get('price',-1)>0 and int(level_description.get("farmMultiplicator"))>current_factor:
+                        if level_description.get('price',-1)>response_auth['balanceInfo']['balance']:
+                            print_message(f"❌ #{profile_id} Not enough balance {format_money(response_auth['balanceInfo']['balance'])} to upgrade level clock (need {format_money(level_description.get('price',-1))})...")  
+                            break
+                        else:
+                            response=session.exec_post(f'{URL}/me/level/upgrade', headers=headers, data={})
+                            if response is not None:
+                                print_message(f"✅ #{profile_id} Upgrade clock success x{response['level']}.New balance:{response['balance']}") 
+                                response_auth['balanceInfo']['balance']=response['balance']
+                            else:
+                                print_message(f"❌ #{profile_id} Something went wrong when call upgrade clock...")  
+                                break
+
+            if response_auth['balanceInfo']['referral'].get('availableBalance',0)>0:
+                response=session.exec_post(f'{URL}/balance/referral/claim', headers=headers,data={})
+                if response is not None:
+                    print_message(f"✅ #{profile_id} Claim ref {response_auth['balanceInfo']['referral']['availableBalance']} success") 
+                else:
+                    print_message(f"❌ #{profile_id} Something went wrong when call claim ref...")  
+
+            response=session.exec_get(f'{URL}/farming/info', headers=headers)
             if response is None:
                 return print_message(f"❌ #{profile_id} Load farm info failed.Move next...")  
             if  response.get('activeFarmingStartedAt',None) is None:
