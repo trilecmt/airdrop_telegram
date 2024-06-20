@@ -30,7 +30,7 @@ def exec(profile):
                 print_message(f"#{profile['id']} Get new IP Failed")
                 return
             
-            profile_header=f"#{profile['id']}-{profile["name"]}[{response['origin']}]" 
+            profile_header=f"#{profile['id']}-{profile['name']}[{response['origin']}]" 
             query_id=profile['query']
             
             
