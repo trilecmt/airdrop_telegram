@@ -315,11 +315,11 @@ def exec(profile):
             available_tap =  get_user_data()  
             claim_login()
             claim_daily_cipher(cipher=cipher)
-            # looping_click(available_tap)
-            # time.sleep(2)
-            # available_tap = get_boost()
-            # if available_tap != 0:
-            #     looping_click(available_tap)
+            looping_click(available_tap)
+            time.sleep(2)
+            available_tap = get_boost()
+            if available_tap != 0:
+                looping_click(available_tap)
             
             is_continue=buy_daily_combo_card()
             if not is_continue:
