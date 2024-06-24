@@ -24,13 +24,13 @@ def exec(profile):
         with MySession() as session:
             session.set_proxy(profile['proxy'])
             
-            print_message(f"#{profile['id']} Checking new IP...")
+            print_message(f"#{profile['name']} Checking new IP...")
             response = session.exec_get(url="https://httpbin.org/ip",headers={"content-type": "application/json"})
             if response is None:
                 print_message(f"#{profile['id']} Get new IP Failed")
                 return
             
-            profile_header=f"#{profile['id']}-{profile["name"]}[{response['origin']}]" 
+            profile_header=f"#{profile['id']}-{profile['name']}[{response['origin']}]" 
             query_id=profile['query']
             
             
@@ -230,7 +230,7 @@ def exec(profile):
                     error="Chưa biết" 
                     try:
                         if response.text=='{"message":"same day"}':
-                            error="Đã nhận của ngày hôm nay"
+                            return {"message":"same day"}
                     except:
                         pass
                     print(f"{Fore.RED+Style.BRIGHT}Không thể nhận phần thưởng hàng ngày.Lỗi {error}")
