@@ -318,11 +318,11 @@ def exec(profile):
             available_tap =  get_user_data()  
             claim_login()
             claim_daily_cipher(cipher=cipher)
-            looping_click(available_tap)
-            time.sleep(2)
-            available_tap = get_boost()
-            if available_tap != 0:
-                looping_click(available_tap)
+            # looping_click(available_tap)
+            # time.sleep(2)
+            # available_tap = get_boost()
+            # if available_tap != 0:
+            #     looping_click(available_tap)
             
             is_continue=buy_daily_combo_card()
             if not is_continue:
@@ -352,13 +352,9 @@ def exec(profile):
                     response_info  = session.exec_post(url_buy_upgrade, headers=get_header(content_length="54"), data={
                         "upgradeId": picked_upgrade_card['id'],
                         "timestamp": int(time.time())
-                    },log=True)
-                    if response_info is None:
-                        print_message(f"❌ #{profile_id} Something wrong for buy {picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}")
-                        break
-                    else:
-                        print_message(f"✅ #{profile_id} Bought {picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}")
-                        sleep(2)
+                    })
+                    print_message(f"✅ #{profile_id} Bought {picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}")
+                    sleep(2)
                 else:
                     print_message(f"❌ #{profile_id} Not enough coin for buy {picked_upgrade_card['name']} with price {picked_upgrade_card['price']}, ROI: {picked_upgrade_card['ROI']}")
                     break

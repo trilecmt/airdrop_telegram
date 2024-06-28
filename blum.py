@@ -24,7 +24,7 @@ def exec(profile):
         with MySession() as session:
             session.set_proxy(profile['proxy'])
             
-            print_message(f"#{profile['id']} Checking new IP...")
+            print_message(f"#{profile['name']} Checking new IP...")
             response = session.exec_get(url="https://httpbin.org/ip",headers={"content-type": "application/json"})
             if response is None:
                 print_message(f"#{profile['id']} Get new IP Failed")
@@ -226,8 +226,14 @@ def exec(profile):
                 response = session.post('https://game-domain.blum.codes/api/v1/daily-reward?offset=-420', headers=headers)
                 try:
                     return response.json()
-                except ValueError:  
-                    print(f"{Fore.RED+Style.BRIGHT}Không thể nhận phần thưởng hàng ngày")
+                except ValueError: 
+                    error="Chưa biết" 
+                    try:
+                        if response.text=='{"message":"same day"}':
+                            return {"message":"same day"}
+                    except:
+                        pass
+                    print(f"{Fore.RED+Style.BRIGHT}Không thể nhận phần thưởng hàng ngày.Lỗi {error}")
                     return None
 
 
@@ -359,7 +365,7 @@ if __name__=="__main__":
                 profile={
                     "id":idx+1,
                     "name":row['profile'],
-                    "query":row["query"],
+                    "query": row["query"],
                     "proxy":row["proxy"]
                 }
                 # db_profile=schedule.get_profile(game=GAME, profile_name=profile['name'])
