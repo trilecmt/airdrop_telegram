@@ -33,8 +33,10 @@ def exec(profile):
     # Assuming 'data' is defined somewhere in your Python environment
     match = re.search(r'id%2522%253A(\d+)', url)
     if not match:
-        print_message(f"❌ #{profile['name']} Pattern not found")
-        return None,None
+        match = re.search(r'id%22%3A(\d+)', url)
+        if not match:
+            print_message(f"❌ #{profile['name']} Pattern not found")
+            return None,None
     uid = match.group(1)
     parsed_url = urllib.parse.urlparse(url)
     query_string = parsed_url.fragment
@@ -153,30 +155,33 @@ def main():
                 "name":str(row["profile"]),
                 "url":row["url"],
                 "proxy":row["proxy"]
-            }      
-            db_profile=schedule.get_profile(game=GAME, profile_name=profile['name'])
-            start_time=datetime.utcnow()
-            if db_profile is None or db_profile["next_run_date"] < start_time:
-                tap_time,farm_time=exec(profile)
-                if tap_time is None:
-                    tap_time=(datetime.utcnow()+timedelta(minutes=5))
-                if farm_time is None:
-                    farm_time=(datetime.utcnow()+timedelta(minutes=5))
-                schedule_time=min(tap_time,farm_time)
-                schedule.update_profile(
-                    game=GAME,
-                    profile_name=profile["name"],
-                    latest_run_date=start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-                    next_run_date=schedule_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-                )
+            }    
+
+            tap_time,farm_time=exec(profile)  
+            # db_profile=schedule.get_profile(game=GAME, profile_name=profile['name'])
+            # start_time=datetime.utcnow()
+            # if db_profile is None or db_profile["next_run_date"] < start_time:
+            #     tap_time,farm_time=exec(profile)
+            #     if tap_time is None:
+            #         tap_time=(datetime.utcnow()+timedelta(minutes=5))
+            #     if farm_time is None:
+            #         farm_time=(datetime.utcnow()+timedelta(minutes=5))
+            #     schedule_time=min(tap_time,farm_time)
+                # schedule.update_profile(
+                #     game=GAME,
+                #     profile_name=profile["name"],
+                #     latest_run_date=start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+                #     next_run_date=schedule_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+                # )
 
     except Exception as e:
         print(e)
 
 if __name__=='__main__':
+    delay_min= int(input("Nhập thời gian nghỉ (phút):"))
     while True:
         main()       
-        for __second in range(60, 0, -1):
+        for __second in range(delay_min*60, 0, -1):
             sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
             sys.stdout.flush()
             time.sleep(1)
