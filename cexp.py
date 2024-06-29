@@ -30,7 +30,6 @@ def exec(profile):
     url,proxy_url=profile['url'],profile['proxy']
     if url is None:
         return None,None
-    # Assuming 'data' is defined somewhere in your Python environment
     match = re.search(r'id%2522%253A(\d+)', url)
     if not match:
         match = re.search(r'id%22%3A(\d+)', url)
@@ -39,9 +38,13 @@ def exec(profile):
             return None,None
     uid = match.group(1)
     parsed_url = urllib.parse.urlparse(url)
+    
     query_string = parsed_url.fragment
     query_params = urllib.parse.parse_qs(query_string)
-    data = query_params['tgWebAppData'][0]
+    if len(query_params)==4:
+        data=query_params['tgWebAppData'][0]
+    else:
+        data =query_string.split("tgWebAppData=")[1].split("&tgWebAppVersion")[0]# query_params['tgWebAppData'][0]
     # Define headers
     headers = {
         "content-type": "application/json"
