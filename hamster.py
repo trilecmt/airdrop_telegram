@@ -269,6 +269,9 @@ def exec(profile):
 
             daily_combo_cards=[item for item in list_upgrade_cards if item['name'] in daily_combo_cards_today]
             if len(daily_combo_cards)!=3:
+                for item in daily_combo_cards_today:
+                    if item not in [x['name'] for x in list_upgrade_cards]:
+                        print_message(f"❌ #{profile_id} Card {item} not found")
                 print_message(f"❌ #{profile_id} Combo card must 3 cards")
                 return True
             is_available=True
@@ -315,11 +318,11 @@ def exec(profile):
             available_tap =  get_user_data()  
             claim_login()
             claim_daily_cipher(cipher=cipher)
-            # looping_click(available_tap)
-            # time.sleep(2)
-            # available_tap = get_boost()
-            # if available_tap != 0:
-            #     looping_click(available_tap)
+            looping_click(available_tap)
+            time.sleep(2)
+            available_tap = get_boost()
+            if available_tap != 0:
+                looping_click(available_tap)
             
             is_continue=buy_daily_combo_card()
             if not is_continue:
