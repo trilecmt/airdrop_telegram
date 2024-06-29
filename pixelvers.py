@@ -60,7 +60,8 @@ class Data:
         self.secret = secret
 
 class PixelTod:
-    def __init__(self,proxies):
+    def __init__(self,proxies,profile_name):
+        self.profile_name=profile_name
         self.session=requests.Session()
         self.proxies=proxies
         self.DEFAULT_COUNTDOWN = 10 * 60  # 5 minutes
@@ -272,12 +273,12 @@ class PixelTod:
 
     def log(self, message):
         now = datetime.now().isoformat(" ").split(".")[0]
-        print(f"{hitam}[{now}]{reset} {self.profile_id}{message}")
+        print(f"{hitam}[{now}]{reset} {self.profile_name}{message}")
 
 
 def exec(profile):
     try:
-        app = PixelTod(utils.get_proxies(profile['proxy'],type=1))
+        app = PixelTod(utils.get_proxies(profile['proxy'],type=1),profile_name=profile['name'])
         print_message(f"✅ #{profile['name']} Bắt đầu")
         response = app.api_call(url="https://httpbin.org/ip",headers={"content-type": "application/json"})
         if response.status_code!=200:
