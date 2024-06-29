@@ -137,7 +137,7 @@ def exec(profile):
                     print_message(f"❌ #{profile_id} farm lỗi.Move next...")  
                     return tap_time,farm_time
                 print_message(f"✅ #{profile_id} FARM: {start_farm_result['data']['farmReward']}")
-                farm_time=(datetime.strptime(user_info["data"]["farmStartedAt"], format_string)+timedelta(hours=4))
+                farm_time=None# (datetime.strptime(user_info["data"]["farmStartedAt"], format_string)+timedelta(hours=4))
         return tap_time,farm_time
 
     except Exception as e:  
