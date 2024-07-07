@@ -922,7 +922,6 @@ async def main(count_process,delay):
             "proxy":row["proxy"],
             "energy_level":row["energy_level"],
             "dame_level":row["dame_level"],
-            "token":row["token"],
             "vector":vector
         }
         profiles.append(profile)
