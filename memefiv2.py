@@ -819,9 +819,9 @@ __typename
 
       process_bot(user_data['coinsAmount'])
       
-      if current_level_boss == 11:
-          print_message("❌ #{profile_id} đã max level boss", flush=True)
-          return
+      # if current_level_boss == 11:
+      #     print_message(f"❌ #{profile_id} đã max level boss", flush=True)
+      #     return
       
       # print_message(f"✅ #{profile_id} Free Turbo : {user_data['freeBoosts']['currentTurboAmount']} Free Energy : {user_data['freeBoosts']['currentRefillEnergyAmount']}")
       # print_message(f"✅ #{profile_id} Boss level : {user_data['currentBoss']['level']} | Boss health : {user_data['currentBoss']['currentHealth']} - {user_data['currentBoss']['maxHealth']}")

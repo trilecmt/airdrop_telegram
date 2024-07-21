@@ -46,8 +46,7 @@ async def exec(profile):
             json_response=await session.exec_get(url_game_info, headers=header)
             if json_response is None:
                 return print_message(f"❌ #{profile_id} ERROR {json_response}")
-
-            coin_pool=json_response['data']['coinPoolTotalCount']
+            
             coin_left=json_response['data']['coinPoolLeftCount']
             if coin_left<150:
                 return print_message(f"❌ #{profile_id} Mana too low.Move Next...")  
