@@ -98,7 +98,7 @@ class OKX:
             if daily_checkin_task:
                 if daily_checkin_task["state"] == 0:
                     self.log("Bắt đầu checkin...")
-                    self.perform_checkin(ext_user_id, daily_checkin_task["id"],proxy)
+                    self.perform_checkin(query_id,ext_user_id, daily_checkin_task["id"],proxy)
                 else:
                     self.log("Hôm nay bạn đã điểm danh rồi!")
         except Exception as error:
@@ -108,7 +108,6 @@ class OKX:
         headers = self.headers().copy()
         headers['X-Telegram-Init-Data']= query_id
         url = f"https://www.okx.com/priapi/v1/affiliate/game/racer/task?t={int(time.time())}"
-        headers = self.headers()
         payload = {
             "extUserId": ext_user_id,
             "id": task_id
