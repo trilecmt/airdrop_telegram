@@ -27,10 +27,11 @@ def build_proxy(proxy_url:str,type=1):
         if type==1:
             return {'http':proxy_url,'https':proxy_url}
 
-
-        
+ 
 class OKX:
-    def headers(self):
+    def headers(self,ref_id):
+        if ref_id is None:
+            ref_id=''
         return {
             "Accept": "application/json",
             "Accept-Encoding": "gzip, deflate, br, zstd",
@@ -38,7 +39,7 @@ class OKX:
             "App-Type": "web",
             "Content-Type": "application/json",
             "Origin": "https://www.okx.com",
-            "Referer": "https://www.okx.com/mini-app/racer?tgWebAppStartParam=linkCode_85298986",
+            "Referer": f"https://www.okx.com/mini-app/racer?tgWebAppStartParam=linkCode_{ref_id}",
             "Sec-Ch-Ua": '"Not/A)Brand";v="8", "Chromium";v="126", "Microsoft Edge";v="126"',
             "Sec-Ch-Ua-Mobile": "?0",
             "Sec-Ch-Ua-Platform": '"Windows"',
@@ -61,22 +62,22 @@ class OKX:
             return None
     
     
-    def post_to_okx_api(self,query_id,ext_user_id, ext_user_name,proxy):
+    def post_to_okx_api(self,ref_id,query_id,ext_user_id, ext_user_name,proxy):
         url = f"https://www.okx.com/priapi/v1/affiliate/game/racer/info?t={int(time.time())}"
-        headers = self.headers().copy()
+        headers = self.headers(ref_id).copy()
         headers['X-Telegram-Init-Data']= query_id
         payload = {
             "extUserId": ext_user_id,
             "extUserName": ext_user_name,
             "gameId": 1,
-            "linkCode": ""
+            "linkCode": ref_id
         }
         response = requests.post(url, headers=headers, json=payload,proxies=build_proxy(proxy))
         return response.json()
 
-    def assess_prediction(self,query_id, ext_user_id, predict,proxy):
+    def assess_prediction(self,ref_id,query_id, ext_user_id, predict,proxy):
         url = f"https://www.okx.com/priapi/v1/affiliate/game/racer/assess?t={int(time.time())}"
-        headers = self.headers().copy()
+        headers = self.headers(ref_id).copy()
         headers['X-Telegram-Init-Data']= query_id
         payload = {
             "extUserId": ext_user_id,
@@ -87,9 +88,9 @@ class OKX:
         return response.json()
 
 
-    def check_daily_rewards(self,query_id, ext_user_id,proxy):
+    def check_daily_rewards(self,ref_id,query_id, ext_user_id,proxy):
         url = f"https://www.okx.com/priapi/v1/affiliate/game/racer/tasks?extUserId={ext_user_id}&t={int(time.time())}"
-        headers = self.headers().copy()
+        headers = self.headers(ref_id).copy()
         headers['X-Telegram-Init-Data']= query_id
         try:
             response = requests.get(url, headers=headers,proxies=build_proxy(proxy))
@@ -98,14 +99,14 @@ class OKX:
             if daily_checkin_task:
                 if daily_checkin_task["state"] == 0:
                     self.log("Bắt đầu checkin...")
-                    self.perform_checkin(query_id,ext_user_id, daily_checkin_task["id"],proxy)
+                    self.perform_checkin(ref_id,query_id,ext_user_id, daily_checkin_task["id"],proxy)
                 else:
                     self.log("Hôm nay bạn đã điểm danh rồi!")
         except Exception as error:
             self.log(f"Lỗi kiểm tra phần thưởng hàng ngày: {str(error)}")
 
-    def perform_checkin(self,query_id,ext_user_id, task_id,proxy):
-        headers = self.headers().copy()
+    def perform_checkin(self,ref_id,query_id,ext_user_id, task_id,proxy):
+        headers = self.headers(ref_id).copy()
         headers['X-Telegram-Init-Data']= query_id
         url = f"https://www.okx.com/priapi/v1/affiliate/game/racer/task?t={int(time.time())}"
         payload = {
@@ -130,9 +131,9 @@ class OKX:
 
     def main(self):
         import pandas as pd
-        df=pd.read_excel("account.xlsx",sheet_name="okxrace",dtype={"proxy":str,"id":str,"username":str,"check_ip":int,"query_id":str})
+        df=pd.read_excel("account.xlsx",sheet_name="okxrace",dtype={"proxy":str,"id":str,"username":str,"check_ip":int,"query_id":str,"ref_id":str})
         df['proxy']=df['proxy'].fillna("")
-        records_data=df[["proxy","id","username","check_ip","query_id"]].to_dict("records")
+        records_data=df[["proxy","id","username","check_ip","query_id","ref_id"]].to_dict("records")
         import datetime
         for item in records_data:
             item['next_round']=datetime.datetime.utcnow()
@@ -154,14 +155,14 @@ class OKX:
                             self.log(f"Lần chạy tiếp theo {picked_user['next_round']}...")
                             continue
                         self.log(f"Lấy IP thành công {response}")
-                    self.check_daily_rewards(picked_user.get("query_id"),ext_user_id,picked_user.get('proxy'))
+                    self.check_daily_rewards(picked_user.get("ref_id"),picked_user.get("query_id"),ext_user_id,picked_user.get('proxy'))
                     # for _ in range(50):
-                    response = self.post_to_okx_api(picked_user.get("query_id"), ext_user_id, ext_user_name,picked_user.get('proxy'))
+                    response = self.post_to_okx_api(picked_user.get("ref_id"),picked_user.get("query_id"), ext_user_id, ext_user_name,picked_user.get('proxy'))
                     balance_points = response.get("data", {}).get("balancePoints", 0)
                     self.log(f"{Fore.GREEN}Balance Points:{Style.RESET_ALL} {balance_points}")
                     
                     predict = random.randint(0,1)
-                    assess_response = self.assess_prediction(picked_user.get("query_id"),ext_user_id, predict,picked_user.get('proxy'))
+                    assess_response = self.assess_prediction(picked_user.get("ref_id"),picked_user.get("query_id"),ext_user_id, predict,picked_user.get('proxy'))
                     assess_data = assess_response.get("data", {})
                     result = Fore.GREEN + "Win" if assess_data.get("won") else Fore.RED + "Thua"
                     calculated_value = assess_data.get("basePoint", 0) * assess_data.get("multiplier", 0)
