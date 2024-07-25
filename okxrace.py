@@ -8,7 +8,29 @@ import warnings
 
 from helper import utils
 warnings.filterwarnings("ignore", category=DeprecationWarning)
- 
+import urllib.parse
+import json
+
+
+def parse_user(query):
+    try:
+        # Parse the query string
+        query_dict = urllib.parse.parse_qs(query)
+
+        # Decode the user information
+        user_info = query_dict.get('user')[0]
+        user_info_decoded = urllib.parse.unquote(user_info)
+        user_info_dict = json.loads(user_info_decoded)
+
+        # Get the user_id
+        # Get the user_id and username
+        user_id = str(user_info_dict.get('id',None))
+        username = user_info_dict.get('username',None)
+        return user_id,username
+    except:
+        return None,None
+    
+
 def build_proxy(proxy_url:str,type=1):
     if proxy_url is not None and proxy_url!='':  
         if not proxy_url.startswith("http"):
@@ -131,9 +153,11 @@ class OKX:
 
     def main(self):
         import pandas as pd
-        df=pd.read_excel("account.xlsx",sheet_name="okxrace",dtype={"proxy":str,"id":str,"username":str,"check_ip":int,"query_id":str,"ref_id":str})
+        df=pd.read_excel("account.xlsx",sheet_name="okxrace",dtype={"proxy":str,"check_ip":int,"query_id":str,"ref_id":str})
         df['proxy']=df['proxy'].fillna("")
-        records_data=df[["proxy","id","username","check_ip","query_id","ref_id"]].to_dict("records")
+        df['ref_id']=df['ref_id'].fillna("")
+        
+        records_data=df[["proxy","check_ip","query_id","ref_id"]].to_dict("records")
         import datetime
         for item in records_data:
             item['next_round']=datetime.datetime.utcnow()
@@ -144,7 +168,12 @@ class OKX:
                 time.sleep(1)
             else:
                 picked_user= sorted(picked_users, key=lambda d: d['next_round'])[0]
-                ext_user_id, ext_user_name = picked_user.get("id"),picked_user.get("username")
+                ext_user_id, ext_user_name = parse_user(picked_user.get("query_id"))
+                if ext_user_name is None:
+                    ext_user_name=""
+                if  ext_user_id is None:
+                    print(picked_user.get("query_id"))
+                    raise Exception(f'UserId không thể parse')      
                 try:
                     print(f"{Fore.BLUE}========== Tài khoản {ext_user_name} =========={Style.RESET_ALL}")
                     if picked_user.get("check_ip")==1:
@@ -178,6 +207,8 @@ class OKX:
                         picked_user['next_round']=datetime.datetime.utcnow()+datetime.timedelta(seconds=60)
                         self.log(f"Lần chạy tiếp theo {picked_user['next_round']}...")
                 except Exception as error:
+                    import traceback
+                    print(traceback.format_exc())
                     self.log(f"{Fore.RED}Lỗi rồi:{Style.RESET_ALL} {str(error)}")
                     picked_user['next_round']=datetime.datetime.utcnow()+datetime.timedelta(seconds=60)
                     self.log(f"Lần chạy tiếp theo {picked_user['next_round']}....")
