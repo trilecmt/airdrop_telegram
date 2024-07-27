@@ -333,9 +333,9 @@ def exec(profile):
             if available_tap != 0:
                 looping_click(available_tap)
             
-            # is_continue=buy_daily_combo_card()
-            # if not is_continue:
-            #     return
+            is_continue=buy_daily_combo_card()
+            if not is_continue:
+                return
             sleep(2,4)
             for i in range(50):    
                 get_user_data(is_need_user_info=False)  
