@@ -13,6 +13,26 @@ import urllib.parse
 import json
 import datetime
 
+URL_JOIN='https://api.onetime.dog/join'
+URL_REWARD='https://api.onetime.dog/join'
+HEADER = {
+            'Accept': 'application/json',
+            'Accept-Encoding': 'gzip, deflate, br, zstd',
+            'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
+            'If-Modified-Since': 'Fri, 26 Jul 2024 17:56:51 GMT',
+            'Origin': 'https://onetime.dog',
+            'Priority': 'u=1, i',
+            'Referer': 'https://onetime.dog/',
+            'Sec-Ch-Ua': '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
+            'Sec-Ch-Ua-Mobile': '?0',
+            'Sec-Ch-Ua-Platform': '"Windows"',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'same-site',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+            }
+
+
 def parse_user(query):
     try:
         # Parse the query string
@@ -68,30 +88,13 @@ def main():
     for user in records_data:
         try:
             user_id,user_name=parse_user(user.get("query_id"))
-            url = f"https://api.onetime.dog/rewards?user_id={user_id}"
-
-            payload = {}
-            headers = {
-            'Accept': 'application/json',
-            'Accept-Encoding': 'gzip, deflate, br, zstd',
-            'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
-            'If-Modified-Since': 'Fri, 26 Jul 2024 17:56:51 GMT',
-            'Origin': 'https://onetime.dog',
-            'Priority': 'u=1, i',
-            'Referer': 'https://onetime.dog/',
-            'Sec-Ch-Ua': '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
-            'Sec-Ch-Ua-Mobile': '?0',
-            'Sec-Ch-Ua-Platform': '"Windows"',
-            'Sec-Fetch-Dest': 'empty',
-            'Sec-Fetch-Mode': 'cors',
-            'Sec-Fetch-Site': 'same-site',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-            }
+            # url = f"https://api.onetime.dog/rewards?user_id={user_id}"      
             response_ip=get_ip(user.get("proxy"))
             if response_ip is None:
                 print(f'[{user_id} Error proxy {user.get("proxy")}')
                 continue
-            response = requests.request("GET", url, headers=headers, data=payload,proxies=build_proxy(user.get("proxy")))          
+            response = requests.request("POST", "https://api.onetime.dog/join", headers=HEADER, data=user.get("query_id"),proxies=build_proxy(user.get("proxy")))
+            # response = requests.request("GET", url, headers=HEADER, data=payload,proxies=build_proxy(user.get("proxy")))          
             print(f'[{user_id}][{response_ip.get("origin")}] Checkin success {response.text}')
             
         except Exception as e:
