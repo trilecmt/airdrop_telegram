@@ -26,6 +26,8 @@ url_claim_daily_combo="https://api.hamsterkombat.io/clicker/claim-daily-combo"
 url_check_task = "https://api.hamsterkombat.io/clicker/list-tasks"
 url_check_in = "https://api.hamsterkombat.io/clicker/check-task"
 url_claim_daily_cipher = "https://api.hamsterkombat.io/clicker/claim-daily-cipher"
+url_start_key = "https://api.hamsterkombatgame.io/clicker/start-keys-minigame"
+url_claim_key = "https://api.hamsterkombatgame.io/clicker/claim-daily-keys-minigame"
 
 def get_daily_cards():
     url = 'https://www.myjsons.com/v/hamster_daily_cards'
@@ -257,6 +259,12 @@ def exec(profile):
                     result = buy_conditions_cards(condition_card['name'], condition_card['condition'])
                     return result
         
+        def claim_key(code='MDk4Mjg1OTIxM3wyMDk2OTkyODUz'):
+            response_info  = session.exec_post(url_start_key, headers=get_header(), data={
+            })
+            pass
+
+
         def buy_daily_combo_card():
             if daily_combo_cards_today is None:
                 print_message(f"❌ #{profile_id} Not found daily combo card in server...")
@@ -315,6 +323,7 @@ def exec(profile):
             return True
         
         try:
+            # claim_key()
             available_tap =  get_user_data()  
             claim_login()
             claim_daily_cipher(cipher=cipher)
@@ -324,9 +333,9 @@ def exec(profile):
             if available_tap != 0:
                 looping_click(available_tap)
             
-            is_continue=buy_daily_combo_card()
-            if not is_continue:
-                return
+            # is_continue=buy_daily_combo_card()
+            # if not is_continue:
+            #     return
             sleep(2,4)
             for i in range(50):    
                 get_user_data(is_need_user_info=False)  
@@ -337,7 +346,7 @@ def exec(profile):
                     break
             
                 for card in list_upgrade_cards:
-                    if card['isAvailable'] and not card['isExpired'] and card.get('totalCooldownSeconds',0)==0:
+                    if card['isAvailable'] and not card['isExpired']:
                         if card["price"] == 0 or card["price"] is None:
                             card["price"] = 1
                         card['ROI']=round(100*card['profitPerHourDelta']/card['price'],2)
