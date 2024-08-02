@@ -30,6 +30,7 @@ url_start_key = "https://api.hamsterkombatgame.io/clicker/start-keys-minigame"
 url_claim_key = "https://api.hamsterkombatgame.io/clicker/claim-daily-keys-minigame"
 
 def get_daily_cards():
+    return None,None
     url = 'https://www.myjsons.com/v/hamster_daily_cards'
     f = requests.get(url)
     data = f.json()
@@ -333,9 +334,9 @@ def exec(profile):
             if available_tap != 0:
                 looping_click(available_tap)
             
-            is_continue=buy_daily_combo_card()
-            if not is_continue:
-                return
+            # is_continue=buy_daily_combo_card()
+            # if not is_continue:
+            #     return
             sleep(2,4)
             for i in range(50):    
                 get_user_data(is_need_user_info=False)  

@@ -14,6 +14,7 @@ def print_welcome(game):
 
 
 def get_daily_code():
+    return None
     url = 'https://www.myjsons.com/v/hamster_daily_cards'
     f = requests.get(url)
     data = f.json()
