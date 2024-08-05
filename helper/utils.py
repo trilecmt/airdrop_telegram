@@ -14,15 +14,17 @@ def print_welcome(game):
 
 
 def get_daily_code():
-    return None
-    url = 'https://www.myjsons.com/v/hamster_daily_cards'
-    f = requests.get(url)
-    data = f.json()
-    now=(datetime.datetime.utcnow()+datetime.timedelta(hours=7))
-    _data=[item for item in data if item['date']==now.strftime("%Y%m%d")]
-    if len(_data)==0:
+    try:
+        url = 'https://www.myjsons.com/v/hamster_daily_cards'
+        f = requests.get(url)
+        data = f.json()
+        now=(datetime.datetime.utcnow()+datetime.timedelta(hours=7))
+        _data=[item for item in data if item['date']==now.strftime("%Y%m%d")]
+        if len(_data)==0:
+            return None
+        return data[0]
+    except:
         return None
-    return data[0]
 
 
 def get_proxies(proxy_url,type):

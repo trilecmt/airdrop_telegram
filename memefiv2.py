@@ -48,6 +48,8 @@ fragment FragmentBossFightConfig on TelegramGameConfigOutput {
   currentEnergy
   maxEnergy
   weaponLevel
+  zonesCount
+  tapsReward
   energyLimitLevel
   energyRechargeLevel
   tapBotLevel
@@ -74,6 +76,11 @@ fragment FragmentBossFightConfig on TelegramGameConfigOutput {
   bonusLeaderDamageStartAt
   bonusLeaderDamageMultiplier
   nonce
+  spinEnergyNextRechargeAt
+  spinEnergyNonRefillable
+  spinEnergyRefillable
+  spinEnergyTotal
+  spinEnergyStaticLimit
   __typename
 }
 """
@@ -165,7 +172,17 @@ UPGRADE_QUERY = """
           __typename
         }
         """
-
+QUERY_SPIN="""
+mutation spinSlotMachine {
+  slotMachineSpin {
+    id
+    combination
+    rewardAmount
+    rewardType
+    __typename
+  }
+}
+"""
 QUERY_BOOSTER = """
             mutation telegramGameActivateBooster($boosterType: BoosterType!) {
               telegramGameActivateBooster(boosterType: $boosterType) {
@@ -713,10 +730,22 @@ __typename
           print_message(f"❌ #{profile_id} Đã mua TAPBOT thất bại.")
         
               
+      def spin_energy():
+          json_payload = [{
+              "operationName": "spinSlotMachine",
+              "variables": {},
+            "query": QUERY_SPIN
+          }]
+          response= httpx.post(url, json=json_payload, headers=headers,proxy=proxies)
+          if response.status_code == 200:
+              print_message(f"✅ #{profile_id} Đã kích hoạt SPIN thành công.Reward :{response.json()[0]['data']['slotMachineSpin']['rewardAmount']} {response.json()[0]['data']['slotMachineSpin']['rewardType']}")
+              return  response.json()[0]
+          print_message(f"❌ #{profile_id} Đã kích hoạt SPIN thất bại.")
+
       def apply_boost(boost_type):
           json_payload = [{
               "operationName": "telegramGameActivateBooster",
-              "variables": {"boosterType" : boost_type},
+              "variables": "",
               "query": QUERY_BOOSTER
           }]
           response= httpx.post(url, json=json_payload, headers=headers,proxy=proxies)
@@ -724,6 +753,7 @@ __typename
               print_message(f"✅ #{profile_id} Đã kích hoạt {boost_type} thành công.")
               return  response.json()[0]
           print_message(f"❌ #{profile_id} Đã kích hoạt {boost_type} thất bại.")
+
 
       def get_ip():
         response=httpx.get("https://httpbin.org/ip", headers={"content-type": "application/json"}, proxy=proxies)
@@ -750,6 +780,12 @@ __typename
       if user_data is None:
           return print_message(f"❌ #{profile_id} Load dữ liệu game thất bại.")
 
+      spin_energy_total=user_data['spinEnergyTotal']
+
+      if spin_energy_total>0:
+          for _spin_energy in range(spin_energy_total):
+              spin_energy()
+              time.sleep(3)
       before_amount= user_data['coinsAmount']
       if profile["vector"] is not None:
         submit_taps(vector=profile["vector"])

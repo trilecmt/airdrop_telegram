@@ -30,18 +30,20 @@ url_start_key = "https://api.hamsterkombatgame.io/clicker/start-keys-minigame"
 url_claim_key = "https://api.hamsterkombatgame.io/clicker/claim-daily-keys-minigame"
 
 def get_daily_cards():
-    return None,None
-    url = 'https://www.myjsons.com/v/hamster_daily_cards'
-    f = requests.get(url)
-    data = f.json()
-    now=(datetime.datetime.utcnow()+datetime.timedelta(hours=7))
-    if now.hour<19:
-        now-=datetime.timedelta(days=1)
-    _data=[item for item in data if item['date']==now.strftime("%Y%m%d")]
-    if len(_data)==0:
+    try:
+        url = 'https://www.myjsons.com/v/hamster_daily_cards'
+        f = requests.get(url)
+        data = f.json()
+        now=(datetime.datetime.utcnow()+datetime.timedelta(hours=7))
+        if now.hour<19:
+            now-=datetime.timedelta(days=1)
+        _data=[item for item in data if item['date']==now.strftime("%Y%m%d")]
+        if len(_data)==0:
+            return None,None
+    
+        return _data[0]["cards"],_data[0].get("cipher","")
+    except:
         return None,None
-   
-    return _data[0]["cards"],_data[0].get("cipher","")
 
 
 def exec(profile):

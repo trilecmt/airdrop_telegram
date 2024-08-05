@@ -142,6 +142,51 @@ class OKX:
         except Exception as error:
             self.log(f"Lỗi rồi: {str(error)}")
 
+    def get_boost(self,ref_id,query_id, ext_user_id,proxy):
+        url = f"https://www.okx.com/priapi/v1/affiliate/game/racer/boosts?t={int(time.time())}"
+        headers = self.headers(ref_id).copy()
+        headers['X-Telegram-Init-Data']= query_id
+        try:
+            response = requests.get(url, headers=headers,proxies=build_proxy(proxy))
+            return [item for item in response.json().get("data", []) if item['type']==3][0]
+        except Exception as error:
+            print(error)
+            # self.log(f"Lỗi kiểm tra phần thưởng hàng ngày: {str(error)}")
+
+    def use_boost(self,ref_id,query_id,proxy):
+        url = f"https://www.okx.com/priapi/v1/affiliate/game/racer/boost?t={int(time.time())}"
+        headers = self.headers(ref_id).copy()
+        headers['X-Telegram-Init-Data']= query_id
+        try:
+            response = requests.post(url, headers=headers,data=json.dumps({"id":1}), proxies=build_proxy(proxy)) 
+            if (response.json().get("code") == 0):
+                self.log("Reload Fuel Tank thành công")
+                return True
+            else:
+                self.log(f'Lỗi Reload Fuel Tank: {response.json().get("error_message")}') 
+                return False
+        except Exception as error:
+            self.log(error)
+            return False
+
+    # async useBoost(queryId) {
+    #     const url = `https://www.okx.com/priapi/v1/affiliate/game/racer/boost?t=${Date.now()}`;
+    #     const headers = { ...this.headers(), 'X-Telegram-Init-Data': queryId };
+    #     const payload = { id: 1 };
+
+    #     try {
+    #         const response = await axios.post(url, payload, { headers });
+    #         if (response.data.code === 0) {
+    #             this.log('Reload Fuel Tank thành công!'.yellow);
+    #             await this.Countdown(5);
+    #         } else {
+    #             this.log(`Lỗi Reload Fuel Tank: ${response.data.msg}`.red);
+    #         }
+    #     } catch (error) {
+    #         this.log(`Lỗi rồi: ${error.message}`.red);
+    #     }
+    # }
+
     def log(self, msg):
         print(f"[*] {msg}")
 
@@ -186,29 +231,40 @@ class OKX:
                         self.log(f"Lấy IP thành công {response}")
                     self.check_daily_rewards(picked_user.get("ref_id"),picked_user.get("query_id"),ext_user_id,picked_user.get('proxy'))
                     # for _ in range(50):
+
+                    
                     response = self.post_to_okx_api(picked_user.get("ref_id"),picked_user.get("query_id"), ext_user_id, ext_user_name,picked_user.get('proxy'))
                     balance_points = response.get("data", {}).get("balancePoints", 0)
-                    self.log(f"{Fore.GREEN}Balance Points:{Style.RESET_ALL} {balance_points}")
                     
-                    predict = random.randint(0,1)
-                    assess_response = self.assess_prediction(picked_user.get("ref_id"),picked_user.get("query_id"),ext_user_id, predict,picked_user.get('proxy'))
-                    assess_data = assess_response.get("data", {})
-                    result = Fore.GREEN + "Win" if assess_data.get("won") else Fore.RED + "Thua"
-                    calculated_value = assess_data.get("basePoint", 0) * assess_data.get("multiplier", 0)
-                    self.log(f"Kết quả: {result} x {assess_data.get('multiplier', 0)}! Balance: {assess_data.get('balancePoints', 0)}, Nhận được: {calculated_value}, Giá cũ: {assess_data.get('prevPrice', 0)}, Giá hiện tại: {assess_data.get('currentPrice', 0)}")
-                    if assess_data.get("numChance", 0) > 1:            
-                        picked_user['next_round']=datetime.datetime.utcnow()+datetime.timedelta(seconds=5)
-                        self.log(f"Lần chạy tiếp theo {picked_user['next_round']}.")
-                        continue
-                    elif assess_data.get("secondToRefresh", 0) > 0:
-                        picked_user['next_round']=datetime.datetime.utcnow()+datetime.timedelta(seconds=(assess_data["secondToRefresh"] + 5))
-                        self.log(f"Lần chạy tiếp theo {picked_user['next_round']}..")
-                    else:
+                    self.log(f"{Fore.GREEN}Balance Points:{Style.RESET_ALL} {balance_points}")
+                    if response.get("data", {}).get("numChances",0)==0:
                         picked_user['next_round']=datetime.datetime.utcnow()+datetime.timedelta(seconds=60)
                         self.log(f"Lần chạy tiếp theo {picked_user['next_round']}...")
+                    else:
+                        for chance in range(response.get("data", {}).get("numChances",0)):
+                            self.log(f'{chance+1}/{response.get("data", {}).get("numChances",0)}')
+                            assess_response = self.assess_prediction(picked_user.get("ref_id"),picked_user.get("query_id"),ext_user_id, 1,picked_user.get('proxy'))
+                            assess_data = assess_response.get("data", {})
+                            result = Fore.GREEN + "Win" if assess_data.get("won") else Fore.RED + "Thua"
+                            calculated_value = assess_data.get("basePoint", 0) * assess_data.get("multiplier", 0)
+                            self.log(f"Kết quả: {result} x {assess_data.get('multiplier', 0)}! Balance: {assess_data.get('balancePoints', 0)}, Nhận được: {calculated_value}, Giá cũ: {assess_data.get('prevPrice', 0)}, Giá hiện tại: {assess_data.get('currentPrice', 0)}")
+                            self.log(f'Chờ 6 giây')
+                            time.sleep(6)
+                        picked_user['next_round']=datetime.datetime.utcnow()+datetime.timedelta(seconds=600)
+                        self.log(f"Lần chạy tiếp theo {picked_user['next_round']}..")
+                    response_boost=self.get_boost(picked_user.get("ref_id"),picked_user.get("query_id"),ext_user_id,picked_user.get('proxy'))
+                    if response_boost is not None and response_boost['curStage']<response_boost['totalStage']:                  
+                        response_boost=self.use_boost(picked_user.get("ref_id"),picked_user.get("query_id"),picked_user.get('proxy'))
+                        if response_boost:
+                            picked_user['next_round']=datetime.datetime.utcnow()+datetime.timedelta(seconds=60)
+                            self.log(f"Lần chạy tiếp theo {picked_user['next_round']}...")
+                    # if response.get("data", {}).get("numChances",0)<=2:
+                    self.log(f'Chờ {assess_data["secondToRefresh"] + 5} giây')    
+
+                    
                 except Exception as error:
                     import traceback
-                    print(traceback.format_exc())
+                    self.log(traceback.format_exc())
                     self.log(f"{Fore.RED}Lỗi rồi:{Style.RESET_ALL} {str(error)}")
                     picked_user['next_round']=datetime.datetime.utcnow()+datetime.timedelta(seconds=60)
                     self.log(f"Lần chạy tiếp theo {picked_user['next_round']}....")
