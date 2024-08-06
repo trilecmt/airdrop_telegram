@@ -913,7 +913,7 @@ __typename
           boost_type = "Turbo"
           apply_boost(boost_type)
           turbo_time = time.time()
-          total_hit = 1500
+          total_hit = random.randint(500,1000)
           tap_payload = [{
               "operationName": "MutationGameProcessTapsBatch",
               "variables": {
