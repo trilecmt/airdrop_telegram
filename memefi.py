@@ -914,17 +914,19 @@ __typename
           apply_boost(boost_type)
           turbo_time = time.time()
           total_hit = random.randint(400,600)
-          tap_payload = [{
-              "operationName": "MutationGameProcessTapsBatch",
-              "variables": {
-                  "payload": {
-                      "nonce": generate_random_nonce(),
-                      "tapsCount": total_hit
-                  }
-              },
-              "query": MUTATION_GAME_PROCESS_TAPS_BATCH
-          }]
+          nonce=generate_random_nonce()
+          
           while True:
+              tap_payload = [{
+                "operationName": "MutationGameProcessTapsBatch",
+                "variables": {
+                    "payload": {
+                        "nonce": nonce,
+                        "tapsCount": total_hit
+                    }
+                },
+                "query": MUTATION_GAME_PROCESS_TAPS_BATCH
+            }]
               respon =  submit_taps(total_hit,json_payload=tap_payload)   
               if respon is not None:
                   energy = respon['telegramGameProcessTapsBatch']['currentEnergy']
