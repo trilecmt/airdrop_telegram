@@ -9,11 +9,30 @@ import traceback
 from helper.utils import print_message, sleep, format_number
 from datetime import datetime, timedelta
 
-url_collect = 'https://api.yescoin.gold/game/collectCoin';
-url_account_info = 'https://api.yescoin.gold/account/getAccountInfo';
-url_game_info = 'https://api.yescoin.gold/game/getGameInfo';
+url_collect = 'https://api.yescoin.gold/game/collectCoin'
+url_account_info = 'https://api.yescoin.gold/account/getAccountInfo'
+url_game_info = 'https://api.yescoin.gold/game/getGameInfo'
+url_offline_info = 'https://api.yescoin.gold/game/getOfflineYesPacBonusInfo'
+url_claim_offline = 'https://api.yescoin.gold/game/claimOfflineBonus'      
 
-            
+import time
+import hashlib
+
+def get_offline_bonus_config(id,claim_type):
+    tm = int(time.time())  # Current timestamp in seconds
+    abc = '6863b339db454f5bbd42ffb5b5ac9841'
+    
+    # Creating the signature
+    sign_string = f"{id}{tm}{abc}{claim_type}"
+    sign = hashlib.md5(sign_string.encode()).hexdigest()
+    
+    return tm,sign
+
+# Example usage:
+# payload = {'id': '123', 'claimType': 'someType'}
+# config = get_offline_bonus_config(payload)
+
+
 async def exec(profile):
     profile_id=profile['id']
     try:
@@ -35,7 +54,7 @@ async def exec(profile):
             'Sec-Fetch-Site': 'same-site',
             'Token': token,
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
-        };
+        }
         from helper.helper_client_session import ClientSession
         async with ClientSession(proxy_url=profile['proxy']) as session:
             response =await session.exec_get(url="https://httpbin.org/ip",headers={"content-type": "application/json"})
@@ -43,14 +62,35 @@ async def exec(profile):
                 print_message(f"❌ #{profile_id} Get new IP Failed")
                 return
 
+            json_response=await session.exec_get(url_offline_info, headers=header)
+            if json_response is None:
+                return print_message(f"❌ #{profile_id} ERROR {json_response}")
+            
+
+            if json_response['code']==0 and json_response['message']=='Success' and isinstance(json_response['data'],list):
+                picked_item=[item for item in json_response['data'] if item['claimType']==1][0]
+                payload={"id":picked_item['transactionId'],"createAt":int(datetime.utcnow().timestamp()),"claimType":1,"destination":""}
+                header_copy=header.copy()
+
+                tm,sign=get_offline_bonus_config(picked_item['transactionId'],1)
+                header_copy['Sign']=sign
+                header_copy['Tm']=str(tm)
+                json_response=await session.exec_post(url_claim_offline,data=payload, headers=header_copy)
+                if json_response is None:
+                    return print_message(f"❌ #{profile_id} ERROR {json_response}")
+                else:
+                    print_message(f"✅ #{profile_id}[{response['origin']}] Claim offlince success {json_response['data']['collectAmount']}")
+
             json_response=await session.exec_get(url_game_info, headers=header)
             if json_response is None:
                 return print_message(f"❌ #{profile_id} ERROR {json_response}")
             
+            coin_pool=json_response['data']['coinPoolTotalCount']
             coin_left=json_response['data']['coinPoolLeftCount']
             if coin_left<150:
                 return print_message(f"❌ #{profile_id} Mana too low.Move Next...")  
             json_response=await session.exec_post(url_collect, headers=header,data=random.randint(50,100))
+
             if json_response is None:
                 return print_message(f"❌ #{profile_id} ERROR {json_response}")
             json_response=await session.exec_get(url_account_info, headers=header)
