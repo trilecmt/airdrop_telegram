@@ -64,9 +64,8 @@ async def exec(profile):
 
             json_response=await session.exec_get(url_offline_info, headers=header)
             if json_response is None:
-                return print_message(f"❌ #{profile_id} ERROR {json_response}")
-            
-
+                return print_message(f"❌ #{profile_id} ERROR {json_response}")  
+            print_message(f"✅ #{profile_id}[{response['origin']}] Claim offlince {json_response['message']}")
             if json_response['code']==0 and json_response['message']=='Success' and isinstance(json_response['data'],list):
                 picked_item=[item for item in json_response['data'] if item['claimType']==1][0]
                 payload={"id":picked_item['transactionId'],"createAt":int(datetime.utcnow().timestamp()),"claimType":1,"destination":""}
