@@ -87,7 +87,7 @@ async function claim(key){
   });
   sleep(5*1000)
   if(result['confirmedLocalExecution']==true){
-     console.log(`${walletAddress} success: ${dateNow}, Balance: ${amount}`);
+     console.log(`${walletAddress} success: , Balance: ${amount}`);
   }
   } catch (error) {
     console.log("Claim failed...")
