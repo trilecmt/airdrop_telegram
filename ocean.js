@@ -35,12 +35,7 @@ function getKeyPairFromMnemonic(seedPhrase){
 }
 
  function getKeyPair(key){
-    if(key.startsWith("suiprivkey")){
-        return getKeyPairFromPrivateKey(key);
-    } 
-    else{
-      return getKeyPairFromMnemonic(key);
-    }
+    return getKeyPairFromMnemonic(key);
  }
 
 async function getTokenBalance(walletAddress,cointType) {
@@ -87,7 +82,7 @@ async function claim(key){
   });
   sleep(5*1000)
   if(result['confirmedLocalExecution']==true){
-     console.log(`${walletAddress} success: , Balance: ${amount}`);
+     console.log(`${walletAddress} success:`);
   }
   } catch (error) {
     console.log("Claim failed...")
