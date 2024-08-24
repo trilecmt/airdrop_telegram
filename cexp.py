@@ -273,7 +273,7 @@ def main():
         print(e)
 
 if __name__=='__main__':
-    delay_min= 30#int(input("Nhập thời gian nghỉ (phút):"))
+    delay_min= int(input("Nhập thời gian nghỉ (phút):"))
     while True:
         main()       
         for __second in range(delay_min*60, 0, -1):
