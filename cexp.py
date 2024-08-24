@@ -1,3 +1,4 @@
+import random
 import sys
 import pandas as pd
 import urllib.parse
@@ -55,50 +56,169 @@ def exec(profile):
         "platform": "android",
         "data": {}
     }
-    tap_time=None
-    farm_time=None
     try:
         with MySession() as session:
             session.set_proxy(proxy_url=proxy_url)
             response = session.exec_get(url="https://httpbin.org/ip",headers={"content-type": "application/json"})
             if response is None:
                 print_message(f"❌ #{profile['name']} Proxy không lấy được IP")
-                return tap_time,farm_time
+                return
             
             profile_id=f"{profile["name"]}[{response['origin']}]" 
-
             user_info = session.exec_post(user_info_url,headers=headers,data=payload)
             if user_info is None:
                  print_message(f"❌ #{profile_id} Không lấy được thông tin user.Move next...")     
-                 return tap_time,farm_time     
+                 return 
             if user_info["status"] != "ok":
                  print_message(f"❌ #{profile_id} Không lấy được thông tin user.Move next...")   
-                 return tap_time,farm_time       
-            # if "userTelegramId" in user_info["data"]:
-            #     print_message("Id:", user_info["data"]["userTelegramId"])
-            # if "username" in user_info["data"]:
-            #     print_message("Username:", user_info["data"]["username"])
-            # if "balance" in user_info["data"]:
-            #     print_message("Balance:", user_info["data"]["balance"])
-            if "availableTaps" in user_info["data"]:
-                if int(user_info["data"]["availableTaps"]) > 0:
-                    print_message("Available Taps:", user_info["data"]["availableTaps"])
-                    print_message("-> CLAIMING..")
+                 return
 
-                    claim_taps_result = session.exec_post(claim_taps_url, headers=headers, data={
-                        "devAuthData": uid,
-                        "authData": data,
-                        "data": {"taps": user_info["data"]["availableTaps"]}
+
+            def buy_upgrade():
+                user_info = session.exec_post(user_info_url,headers=headers,data=payload)
+                if user_info is None or user_info["status"] != "ok":
+                    print_message(f"❌ #{profile_id} Không lấy được thông tin user.Move next...")     
+                    return False
+                current_balance=float(user_info["data"].get("balance_USD"))
+                game_config = session.exec_post("https://cexp.cex.io/api/v2/getGameConfig",headers=headers,data=payload)
+                user_card_response=session.exec_post("https://cexp.cex.io/api/v2/getUserCards",headers=headers,data=payload)
+                upgrade_cards_config=game_config["upgradeCardsConfig"]
+                
+                user_cards=[]
+                for user_card in user_card_response['cards']:
+                    user_cards.append({
+                        "upgradeId":user_card,
+                        "level":user_card_response['cards'].get(user_card).get("lvl"),
+                        "profit":user_card_response['cards'].get(user_card).get("totalCEXP")
                     })
-                    if claim_taps_result is None or claim_taps_result["status"] != "ok":
-                        print_message(f"❌ #{profile_id} Không claim thành công.Move next...")   
-                        return tap_time,farm_time
-                        
-                    print_message(f"✅ #{profile_id} Claim  thành công. Số dư { claim_taps_result['data']['balance']}") 
-                else:
-                     print_message(f"❌ #{profile_id} Không có tap. Số dư { user_info['data']['balance']}") 
-                tap_time=(datetime.utcnow()+timedelta(minutes=60))
 
+                cards = []
+                for card in upgrade_cards_config:
+                    for sub_card in card.get('upgrades', []):  
+                        if sub_card.get("levels")==[]:
+                            continue
+                        level=0
+                        if sub_card.get("upgradeId") in [user_card['upgradeId'] for user_card in user_cards]:
+                            level=[user_card['level'] for user_card in user_cards if user_card['upgradeId']==sub_card.get("upgradeId")][0]
+                        if level==len(sub_card['levels']):
+                            continue
+                        cards.append({
+                            "dependency":sub_card.get("dependency"),
+                            "upgradeId":sub_card.get("upgradeId"),
+                            "categoryId":card.get("categoryId"),
+                            "level":level,
+                            "cost":sub_card.get("levels")[level][0],
+                            "ccy":sub_card.get("levels")[level][1],
+                            "effect":sub_card.get("levels")[level][2],
+                            "effectCcy":sub_card.get("levels")[level][3],
+                            "roi":sub_card.get("levels")[level][2]/sub_card.get("levels")[level][0]
+                        })
+                if len(cards)==0:
+                    print_message(f"❌ #{profile_id} Không có card để mua.Move next...")
+                    return False
+                
+                for card in cards:
+                    if card['dependency']=={}:
+                        continue
+                    if card['upgradeId']=='poolFees':
+                        pass
+                    if "upgradeId" in card['dependency']:
+                       
+                        required_card=card['dependency']['upgradeId']
+                        required_level=card['dependency']['level']
+                        if len([card for card in cards if card['upgradeId']==required_card and card['level']>=required_level])==0:
+                            card['is_available']=False
+                available_cards = [card for card in cards if card.get("is_available",True) and current_balance>=card['cost']]
+                available_cards = sorted(available_cards, key=lambda x: x['roi'], reverse=True)
+                for picked_card in available_cards:
+                    # if current_balance<picked_card['cost']:
+                    #     print_message(f"❌ #{profile_id} Không đủ tiền mua card {picked_card['upgradeId']} cần {picked_card['cost']}/{current_balance}.Move next...")   
+                    #     continue
+                    add_payload=payload.copy()
+                    add_payload["data"]={
+                        "categoryId":picked_card['categoryId'],
+                        "ccy":picked_card['ccy'],
+                        "cost":picked_card['cost'],
+                        "effect":picked_card['effect'],
+                        "effectCcy":picked_card['effectCcy'],
+                        "nextLevel":picked_card['level']+1,
+                        "upgradeId":picked_card['upgradeId']
+                    }
+                    buy_card_response=session.exec_post("https://cexp.cex.io/api/v2/buyUpgrade",headers=headers,data=add_payload,log=True)
+                    if buy_card_response is None or buy_card_response["status"] != "ok":
+                        print_message(f"❌ #{profile_id} Không mua được card {picked_card['upgradeId']}.Move next...")   
+                        return False
+                    else:
+                        print_message(f"✅ #{profile_id} Mua card {picked_card['upgradeId']} thành công")
+                        return True
+            
+
+            def swap_btc():
+                try:
+                    user_info = session.exec_post(user_info_url,headers=headers,data=payload)
+                    if user_info is None or user_info["status"] != "ok":
+                        print_message(f"❌ #{profile_id} Không lấy được thông tin user.Move next...")     
+                        return
+                    current_balance=float(user_info["data"].get("balance_BTC")) / (10 ** user_info["data"].get("precision_BTC"))
+                    convert_data_response=session.exec_post("https://cexp.cex.io/api/v2/getConvertData",headers=headers,data=payload)
+                    if convert_data_response is None or convert_data_response["status"] != "ok":
+                        print_message(f"❌ #{profile_id} Không lấy được thông tin convert.Move next...")   
+                        return
+                  
+                    copy_payload=payload.copy()
+                    copy_payload["data"]={  
+                        "fromAmount":round(current_balance*0.9,4),
+                        "fromCcy":"BTC",
+                        "price":convert_data_response["convertData"]["lastPrices"][-1],
+                        "toCcy":"USD"
+                    }
+                    convert_data_response=session.exec_post("https://cexp.cex.io/api/v2/convert",headers=headers,data=copy_payload,log=True)
+                    if convert_data_response is None or convert_data_response["status"] != "ok":
+                        print_message(f"❌ #{profile_id} Không lấy được thông tin convert.Move next...")   
+                        return
+                    else:
+                        print_message(f"✅ #{profile_id} Convert {round(current_balance*0.9,4)} BTC thành công")
+                    
+                except Exception as e:
+                    print_message(f"❌ #{profile_id} Không lấy được thông tin convert.Move next...")   
+                    return False
+
+            def claim_from_ref():
+                try:
+                    user_info = session.exec_post("https://cexp.cex.io/api/v2/claimFromChildren",headers=headers,data=payload)
+                    if user_info is None or user_info["status"] != "ok":
+                        print_message(f"❌ #{profile_id} Không lấy được thông tin user.Move next...")     
+                        return
+                    print_message(f"✅ #{profile_id} Claim từ ref thành công")
+                except Exception as e:
+                    print_message(f"❌ #{profile_id} Không lấy được thông tin user.Move next...")   
+                    return
+
+            claim_from_ref()
+            swap_btc()
+            while buy_upgrade()==True:
+                print_message(f"✅ #{profile_id} Chuyển mua card tiếp theo...")
+
+            #claim
+            claim_response=session.exec_post("https://cexp.cex.io/api/v2/claimCrypto",headers=headers,data=payload)
+            if claim_response is None or claim_response["status"] != "ok":
+                print_message(f"❌ #{profile_id} Không claim được.Move next...")   
+                return None
+            print_message(f"✅ #{profile_id} Claim thành công. Balance= {claim_response['data']['BTC']['balance_BTC']} BTC") 
+            
+                # copy_payload=payload.copy()
+                # copy_payload["data"]={
+                #     "tapsEnergy": "912",
+                #     "tapsToClaim": "184",
+                #     "tapsTs": int(datetime.now().timestamp())*1000
+                # }
+                # claim_response=session.exec_post("https://cexp.cex.io/api/v2/claimMultiTaps",headers=headers,data=copy_payload,log=True)
+                # if claim_response is None or claim_response["status"] != "ok":
+                #     print_message(f"❌ #{profile_id} Không claim được.Move next...")   
+                #     return None
+                # print_message(f"✅ #{profile_id} Claim thành công. Balance= {claim_response['data']['BTC']['balance_BTC']} BTC") 
+            # tap()
+            
             # else:
             #     print_message(f"❌ #{profile_id} Không tap thành công.")   
             #     tap_time=int((datetime.utcnow()+timedelta(minutes=5)).timestamp())
@@ -160,7 +280,7 @@ def main():
                 "proxy":row["proxy"]
             }    
 
-            tap_time,farm_time=exec(profile)  
+            exec(profile)  
             # db_profile=schedule.get_profile(game=GAME, profile_name=profile['name'])
             # start_time=datetime.utcnow()
             # if db_profile is None or db_profile["next_run_date"] < start_time:
@@ -181,7 +301,7 @@ def main():
         print(e)
 
 if __name__=='__main__':
-    delay_min= int(input("Nhập thời gian nghỉ (phút):"))
+    delay_min= 30#int(input("Nhập thời gian nghỉ (phút):"))
     while True:
         main()       
         for __second in range(delay_min*60, 0, -1):
