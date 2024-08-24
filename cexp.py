@@ -196,8 +196,10 @@ def exec(profile):
 
             claim_from_ref()
             swap_btc()
-            while buy_upgrade()==True:
-                print_message(f"✅ #{profile_id} Chuyển mua card tiếp theo...")
+            while True:
+                if buy_upgrade()==False:
+                    break
+                #print_message(f"✅ #{profile_id} Chuyển mua card tiếp theo...")
 
             #claim
             claim_response=session.exec_post("https://cexp.cex.io/api/v2/claimCrypto",headers=headers,data=payload)
