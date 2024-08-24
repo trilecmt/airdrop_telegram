@@ -205,7 +205,7 @@ def exec(profile):
                 print_message(f"❌ #{profile_id} Không claim được.Move next...")   
                 return None
             print_message(f"✅ #{profile_id} Claim thành công. Balance= {claim_response['data']['BTC']['balance_BTC']} BTC") 
-            
+
                 # copy_payload=payload.copy()
                 # copy_payload["data"]={
                 #     "tapsEnergy": "912",
@@ -230,35 +230,7 @@ def exec(profile):
             # print_message(f"✅ #{profile_id} FARM REWARD:", user_info["data"]["farmReward"])
             # print_message(f"✅ #{profile_id} FARMING")
             
-            if "farmStartedAt" in user_info["data"] and datetime.utcnow()> (datetime.strptime(user_info["data"]["farmStartedAt"], format_string)+timedelta(hours=4)):
-                claim_farm_result = session.exec_post(claim_farm_url, headers=headers, data={
-                    "devAuthData": uid,
-                    "authData": data,
-                    "data": {}
-                })
-                if claim_farm_result is None or ("status" in claim_farm_result and claim_farm_result["status"] != "ok"):
-                    print_message(f"❌ #{profile_id} farm lỗi.Move next...")   
-                    return tap_time,farm_time
-                
-                # claim_farm_result["data"]["farmReward"] = "0.00"
-                user_info["data"]["farmReward"]= "0.00"
-                print_message(f"✅ #{profile_id} CLAIM: {claim_farm_result['data']['claimedBalance']}, BALANCE:{claim_farm_result['data']['balance']}")
-            elif "farmStartedAt" in user_info["data"]:
-                farm_time=(datetime.strptime(user_info["data"]["farmStartedAt"], format_string)+timedelta(hours=4))
-                print_message(f'❌ #{profile_id} Farm :  {int(((datetime.strptime(user_info["data"]["farmStartedAt"], format_string)+timedelta(hours=4))-datetime.utcnow()).total_seconds()/60)} minutes')
-
-            if "farmReward" in user_info["data"] and user_info["data"]["farmReward"] == "0.00":
-                start_farm_result = session.exec_post(start_farm_url, headers=headers, data={
-                    "devAuthData": uid,
-                    "authData": data,
-                    "data": {}
-                })
-                if start_farm_result is None or ("status" in start_farm_result and start_farm_result["status"] != "ok"):
-                    print_message(f"❌ #{profile_id} farm lỗi.Move next...")  
-                    return tap_time,farm_time
-                print_message(f"✅ #{profile_id} FARM: {start_farm_result['data']['farmReward']}")
-                farm_time=None# (datetime.strptime(user_info["data"]["farmStartedAt"], format_string)+timedelta(hours=4))
-        return tap_time,farm_time
+            
 
     except Exception as e:  
         print_message(f"✅ #{profile_id} Status:ERROR!")
