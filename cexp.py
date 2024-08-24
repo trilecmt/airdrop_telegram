@@ -196,9 +196,8 @@ def exec(profile):
 
             claim_from_ref()
             swap_btc()
-            while True:
-                if buy_upgrade()==False:
-                    break
+            while buy_upgrade()==True:
+                pass
                 #print_message(f"✅ #{profile_id} Chuyển mua card tiếp theo...")
 
             #claim
