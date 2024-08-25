@@ -953,13 +953,13 @@ async def limited_exec(semaphore, profile):
         
             
 
-async def main(count_process,delay):
+async def main(count_process,delay,sheet_name):
     print_message("Next round...")
     code=utils.get_daily_code()
     vector=None
     if code is not None:
         vector=code.get("comboMeme",None)
-    df=pd.read_excel("account.xlsx",dtype={"profile":str, "query":str,"dame_level":int,"energy_level":int,"token":str},sheet_name='memefi')
+    df=pd.read_excel("account.xlsx",dtype={"profile":str, "query":str,"dame_level":int,"energy_level":int,"token":str},sheet_name=sheet_name)
     if "proxy" not in df.columns:
             df["proxy"] = ""
     df['proxy']=df['proxy'].fillna('')
@@ -992,10 +992,11 @@ async def main(count_process,delay):
 
 if __name__=="__main__":
     count_process=int(input("Nhập số CPU:"))
+    sheet_name=input("Nhập tên sheet:")
     delay=int(input("Nhập thời gian nghỉ(phút):"))
     while True:
         try:
-          asyncio.run(main(count_process,delay))        
+          asyncio.run(main(count_process,delay,sheet_name))        
         except Exception as e:
             print_message(traceback.format_exc())
 
