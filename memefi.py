@@ -14,7 +14,9 @@ from datetime import datetime, timedelta
 from urllib.parse import unquote
 from helper.utils import print_message, sleep, format_number
 from helper import utils
-
+import http.client
+import brotli
+import base64
 
 headers_set =  {
   'Accept': '*/*',
@@ -492,6 +494,7 @@ fragment FragmentBossFightConfig on TelegramGameConfigOutput {
 
 url = "https://api-gw-tg.memefi.club/graphql"
 
+
 def generate_random_nonce(length=52):
     characters = string.ascii_letters + string.digits
     return ''.join(random.choice(characters) for _ in range(length))
@@ -502,8 +505,59 @@ async def exec(profile):
       headers = headers_set.copy()
       proxies=utils.get_proxies(profile["proxy"],type=0)
       profile_id=""
-      
-      def auth(query):
+      ip_data=None
+      conn=None
+      if proxies is not None or 1==1:   
+        from urllib.parse import urlparse
+        # Chuỗi proxy
+        
+        # Phân tích chuỗi proxy
+        parsed_url = urlparse(proxies)
+        # Lấy thông tin username, password, host và port
+        username =parsed_url.username
+        password = parsed_url.password
+        proxy_host =parsed_url.hostname
+        proxy_port = parsed_url.port
+        # Tạo một chuỗi xác thực base64 từ username và password
+        auth_base64=None
+        if parsed_url.username is not None:  
+          auth = f'{username}:{password}'
+          auth_encoded = auth.encode('utf-8')
+          auth_base64 = base64.b64encode(auth_encoded).decode('utf-8')
+        if proxy_host is not None:
+          conn = http.client.HTTPSConnection(proxy_host, proxy_port)
+        else:
+            conn = http.client.HTTPSConnection()
+        def get_ip(auth_base64):
+          conn_ip = http.client.HTTPSConnection(proxy_host, proxy_port)
+          if auth_base64 is not None:
+             conn_ip.set_tunnel('api.myip.com', headers={'Proxy-Authorization': f'Basic {auth_base64}'})
+          else:
+             conn_ip.set_tunnel('api.myip.com')
+          # Gửi yêu cầu HTTPS tới server đích qua proxy
+          conn_ip.request('GET', '/')
+          response = conn_ip.getresponse()
+          if response.status == 200:
+              data = response.read()
+              conn_ip.close()
+              return json.loads(data)['ip']
+          else:
+            conn_ip.close()
+          
+
+
+      def call_data(conn,payload):
+          conn.request("POST", "/graphql", json.dumps(payload), headers) 
+          res = conn.getresponse()
+          if res.status==200:
+              data = res.read()
+              str_data=(brotli.decompress(data))
+              return json.loads(str_data)
+
+          
+        
+
+      def auth(cnn,query):
           tg_web_data = unquote(unquote(query))
           query_id = tg_web_data.split('query_id=', maxsplit=1)[1].split('&user', maxsplit=1)[0]
           user_data = tg_web_data.split('user=', maxsplit=1)[1].split('&auth_date', maxsplit=1)[0]
@@ -535,40 +589,31 @@ async def exec(profile):
               "query": QUERY_LOGIN
           }]
           try:
-            response= httpx.post(url, headers=headers, json=data,proxy=proxies)
-            if response.status_code==200:
-              json_response =  response.json()[0]
-              if 'errors' not in json_response:
-                  access_token = json_response['data']['telegramUserLogin']['access_token']
-                  return access_token
+            response= call_data(cnn,data)
+            if response is not None:
+              access_token = response[0]['data']['telegramUserLogin']['access_token']
+              return access_token
           except Exception as e:
               return None
           
-
+      
+          
       # Cek akses token
-      def cek_user():
-          json_payload = json.dumps([
+      def cek_user(cnn):
+          payload =[
             {
               "operationName": "QueryTelegramUserMe",
               "variables": {},
-              "query": "query QueryTelegramUserMe {\n  telegramUserMe {\n    firstName\n    lastName\n    telegramId\n    username\n    referralCode\n    isDailyRewardClaimed\n    referral {\n      username\n      lastName\n      firstName\n      bossLevel\n      coinsAmount\n      __typename\n    }\n    isReferralInitialJoinBonusAvailable\n    league\n    leagueIsOverTop10k\n    leaguePosition\n    _id\n    opens {\n      isAvailable\n      openType\n      __typename\n    }\n    features\n    role\n    __typename\n  }\n}"
+              "query": "query QueryTelegramUserMe {\n  telegramUserMe {\n    firstName\n    lastName\n    telegramId\n    username\n    referralCode\n    isDailyRewardClaimed\n    referral {\n      username\n      lastName\n      firstName\n      bossLevel\n      coinsAmount\n      __typename\n    }\n    isReferralInitialJoinBonusAvailable\n    league\n    leagueIsOverTop10k\n    leaguePosition\n    _id\n    opens {\n      isAvailable\n      openType\n      __typename\n    }\n    features\n    role\n    earlyAdopterBonusAmount\n    earlyAdopterBonusPercentage\n    __typename\n  }\n}"
             }
-          ])
-          response= httpx.post(url, headers=headers, data=json_payload,proxy=proxies)
-          if response.status_code == 200:
-              response_data =  response.json()
-              if 'errors' in response_data:
-                  print(f" Gagal Query ID Salah")
-                  return None
-              else:
-                  user_data = response_data[0]['data']['telegramUserMe']
-                  return user_data  
-          else:
-              print(response)
-              print(f" Gagal dengan status {response.status}, mencoba lagi...")
-              return None 
+          ]
+          response=call_data(cnn,payload)
+          if response is not None:
+              user_data = response[0]['data']['telegramUserMe']
+              return user_data 
+          
       
-      def submit_taps(total_tap=None,vector=None,json_payload=None):           
+      def submit_taps(conn,total_tap=None,vector=None,json_payload=None):           
           if vector is None:
               vector=",".join([str(random.randint(1,4)) for i in range(total_tap)])
           if total_tap is None:
@@ -585,14 +630,13 @@ async def exec(profile):
                 },
                 "query": MUTATION_GAME_PROCESS_TAPS_BATCH
             }]
-          response= httpx.post(url, headers=headers, json=json_payload,proxy=proxies)
-          if response.status_code == 200:
-              response_data = response.json()
-              return response_data[0]['data']  # Mengembalikan hasil response
+          response=call_data(conn,json_payload)
+          if response is not None:
+              return response[0]['data']  # Mengembalikan hasil response
           else:
               print_message(f"❌ #{profile_id} Lỗi khi tap thất bại")
 
-      def upgrade(upgrade_type):
+      def upgrade(conn,upgrade_type):
           json_payload = {
               "operationName": "telegramGamePurchaseUpgrade",
               "query": QUERY_UPGRADE,
@@ -600,47 +644,34 @@ async def exec(profile):
                   "upgradeType":upgrade_type
               }
           }
-          response= httpx.post(url, headers=headers, json=json_payload,proxy=proxies)
-          if response.status_code == 200:
-              response_data =  response.json()
+          response_data= call_data(conn,json_payload)
+          if response_data is not None:
               print_message(f"✅ #{profile_id} Đã nâng {upgrade_type} thành công.")
               return response_data
           print_message(f"❌ #{profile_id} Đã nâng {upgrade_type} thất bại")
         
-      def cek_stat():
-          json_payload = [{
+      def cek_stat(cnn):
+          json_payload =[{
               "operationName": "QUERY_GAME_CONFIG",
               "variables": {},
               "query": QUERY_GAME_CONFIG
           }]
           
-          response=httpx.post(url, headers=headers, json=json_payload,proxy=proxies)
-          if response.status_code == 200:
-              response_data = response.json()
-              if 'errors' in response_data:
-                  return None
-              else:
-                  user_data = response_data[0]['data']['telegramGameGetConfig']
-                  return user_data
-              
-          elif response.start == 500:
-              return response
-          
-          else:
-              print(response)
-              print(f" Gagal dengan status {response.status}, mencoba lagi...")
-              return None, None  
+          response=call_data(cnn,json_payload)
+          if response is not None:
+              user_data = response[0]['data']['telegramGameGetConfig']
+              return user_data
 
-      def change_boss():
+      def change_boss(conn):
           try:
             json_payload =[{
                 "operationName": "telegramGameSetNextBoss",
                 "variables": {},
                 "query": QUERY_NEXT_BOSS
             }]
-            response= httpx.post(url, json=json_payload, headers=headers,proxy=proxies)
-            if response.status_code == 200:
-                r= response.json()[0]
+            response= call_data(conn,json_payload)
+            if response is not None:
+                r= response[0]
                 if "errors" in r:
                     print_message(f"❌ #{profile_id} Đã chuyển BOSS thất bại.Lỗi {r.get('errors')[0]['message']}")
                     return False
@@ -654,35 +685,33 @@ async def exec(profile):
             return False
           
 
-      def start_bot():
+      def start_bot(conn):
           url = "https://api-gw-tg.memefi.club/graphql"
           json_payload = {
               "operationName": "TapbotStart",
               "variables": {},
               "query": QUERY_BOT_START
           }
-          response= httpx.post(url, json=json_payload, headers=headers,proxy=proxies)  
-          if response.status_code == 200:
+          response= call_data(conn,json_payload)
+          if response is not None:
               print_message(f"✅ #{profile_id} Đã start TAPBOT thành công.")
-              jsons =  response.json()
               return response
           print_message(f"❌ #{profile_id} Đã start TAPBOT thất bại.")
 
-      def claim_bot():
+      def claim_bot(conn):
           json_payload = [{
               "operationName": "TapbotClaim",
               "variables": {},
               "query": QUERY_BOT_CLAIM
           }]
-          response= httpx.post(url, json=json_payload, headers=headers,proxy=proxies)
+          response= call_data(conn,json_payload)
           
-          if response.status_code == 200:
+          if response is not None:
               print_message(f"✅ #{profile_id} Đã claim TAPBOT thành công.")
-              jsons =  response.json()
               return response
           print_message(f"❌ #{profile_id} Đã claim TAPBOT thất bại.")
       
-      def buy_bot():
+      def buy_bot(conn):
           json_payload = [{
                   "operationName": "telegramGamePurchaseUpgrade",
                   "variables": {"upgradeType": "TapBot"},
@@ -730,61 +759,57 @@ nonce
 __typename
 }"""
                   }]
-          response= httpx.post(url, json=json_payload, headers=headers,proxy=proxies)    
-          if response.status_code == 200:
+          response= call_data(conn,json_payload)
+          if response is not None:
               print_message(f"✅ #{profile_id} Đã mua TAPBOT thành công.")
-              jsons =  response.json()[0]
+              jsons =  response[0]
               return jsons
           print_message(f"❌ #{profile_id} Đã mua TAPBOT thất bại.")
         
               
-      def spin_energy():
+      def spin_energy(cnn):
           json_payload = [{
               "operationName": "spinSlotMachine",
               "variables": {},
             "query": QUERY_SPIN
           }]
-          response= httpx.post(url, json=json_payload, headers=headers,proxy=proxies)
-          if response.status_code == 200:
-              print_message(f"✅ #{profile_id} Đã kích hoạt SPIN thành công.Reward :{response.json()[0]['data']['slotMachineSpin']['rewardAmount']} {response.json()[0]['data']['slotMachineSpin']['rewardType']}")
-              return  response.json()[0]
+          response= call_data(cnn,json_payload)
+          if response is not None:
+              print_message(f"✅ #{profile_id} Đã kích hoạt SPIN thành công.Reward :{response[0]['data']['slotMachineSpin']['rewardAmount']} {response[0]['data']['slotMachineSpin']['rewardType']}")
+              return  response[0]
           print_message(f"❌ #{profile_id} Đã kích hoạt SPIN thất bại.")
 
-      def apply_boost(boost_type):
+      def apply_boost(conn,boost_type):
           json_payload = [{
               "operationName": "telegramGameActivateBooster",
               "variables": {"boosterType":boost_type},
               "query": QUERY_BOOSTER
           }]
-          response= httpx.post(url, json=json_payload, headers=headers,proxy=proxies)
-          if response.status_code == 200:
+          response= call_data(conn,json_payload)
+          if response is not None:
               print_message(f"✅ #{profile_id} Đã kích hoạt {boost_type} thành công.")
-              return  response.json()[0]
+              return  response[0]
           print_message(f"❌ #{profile_id} Đã kích hoạt {boost_type} thất bại.")
-
-
-      def get_ip():
-        response=httpx.get("https://httpbin.org/ip", headers={"content-type": "application/json"}, proxy=proxies)
-        if response.status_code in [200,201]:
-            response_json=  response.json()
-            return response_json           
-        else:
-            return print_message(f"❌ #{profile_id} Get new IP Failed")
-            
-      ip_data= get_ip()
+      
+      conn = http.client.HTTPSConnection(proxy_host, proxy_port)
+      if auth_base64 is not None:
+          conn.set_tunnel("api-gw-tg.memefi.club",443 ,  headers={'Proxy-Authorization': f'Basic {auth_base64}'})
+      else:
+          conn.set_tunnel("api-gw-tg.memefi.club",443 )
+      ip_data= get_ip(auth_base64)
       if ip_data is None:
           return print_message(f"❌ #{profile_id} Lấy IP thất bại.")
-      profile_id=f"{profile.get('profile')}[{ip_data['origin']}]"          
-      access_token =  auth(profile["query"])
+      profile_id=f"{profile.get('profile')}[{ip_data}]"          
+      access_token =  auth(conn,profile["query"])
       if access_token is None:
           return print_message(f"❌ #{profile_id} Auth thất bại.")
       
       headers['Authorization'] = f'Bearer {access_token}'
-      result =  cek_user()
+      result =  cek_user(conn)
       if result is  None:
           return print_message(f"❌ #{profile_id} Load dữ liệu user thất bại.")
       
-      user_data =cek_stat()
+      user_data =cek_stat(conn)
       if user_data is None:
           return print_message(f"❌ #{profile_id} Load dữ liệu game thất bại.")
 
@@ -792,12 +817,12 @@ __typename
 
       if spin_energy_total>0:
           for _spin_energy in range(spin_energy_total):
-              spin_energy()
+              spin_energy(conn)
               time.sleep(3)
       before_amount= user_data['coinsAmount']
       if profile["vector"] is not None:
-        submit_taps(vector=profile["vector"])
-        user_data = cek_stat()
+        submit_taps(conn,vector=profile["vector"])
+        user_data = cek_stat(conn)
         if user_data is None:
             return print_message(f"❌ #{profile_id} Load dữ liệu game thất bại.")
         after_amount=user_data['coinsAmount']
@@ -812,25 +837,24 @@ __typename
       current_level_boss = user_data['currentBoss']['level']
       print_message(f"✅ #{profile_id} Balance : {user_data['coinsAmount']} | Energy : {user_data['currentEnergy']} - {user_data['maxEnergy']}")
       
-      def get_tap_bot_config():
+      def get_tap_bot_config(cnn):
           json_payload = [{
               "operationName": "TapbotConfig",
               "variables": {},
               "query": "fragment FragmentTapBotConfig on TelegramGameTapbotOutput {\n  damagePerSec\n  endsAt\n  id\n  isPurchased\n  startsAt\n  totalAttempts\n  usedAttempts\n  __typename\n}\n\nquery TapbotConfig {\n  telegramGameTapbotGetConfig {\n    ...FragmentTapBotConfig\n    __typename\n  }\n}"
           }]
-          response= httpx.post(url, json=json_payload, headers=headers,proxy=proxies)
-          if response.status_code == 200:
-              response_data =  response.json()
+          response_data= call_data(cnn,json_payload)
+          if response_data is not None:
               user_data = response_data[0]['data']['telegramGameTapbotGetConfig']
               return user_data
       
 
-      def process_bot(current_balance):
-          tap_bot_config= get_tap_bot_config()
+      def process_bot(cnn,current_balance):
+          tap_bot_config= get_tap_bot_config(cnn)
           is_purchase = tap_bot_config["isPurchased"]
           if not is_purchase:
               if current_balance >= 200000:
-                  r= buy_bot()
+                  r= buy_bot(conn)
                   if r is not None:
                       return print_message(f"✅ #{profile_id} Mua BOT AFK thành công.")
                   else:
@@ -848,7 +872,7 @@ __typename
           end_at = get_date_format(tap_bot_config["endsAt"])
           if end_at == "":
               if tap_bot_config["totalAttempts"] - tap_bot_config["usedAttempts"]> 0:
-                  r=  start_bot()
+                  r=  start_bot(conn)
                   if r is not None:
                       return print_message(f"✅ #{profile_id} ACTIVATE BOT AFK thành công.")
                   else:
@@ -857,11 +881,11 @@ __typename
                   return print_message(f"✅ #{profile_id} Đã hết lượt ACTIVATE BOT AFK.")
           else:
               if end_at <= datetime.now():
-                    claim_bot()
+                    claim_bot(conn)
               else:
                   print_message(f"❌ #{profile_id} Chưa đến thời gian CLAIM BOT AFK. {end_at}")
 
-      process_bot(user_data['coinsAmount'])
+      process_bot(conn,user_data['coinsAmount'])
       
       # if current_level_boss == 11:
       #     print_message(f"❌ #{profile_id} đã max level boss", flush=True)
@@ -870,26 +894,26 @@ __typename
       # print_message(f"✅ #{profile_id} Free Turbo : {user_data['freeBoosts']['currentTurboAmount']} Free Energy : {user_data['freeBoosts']['currentRefillEnergyAmount']}")
       # print_message(f"✅ #{profile_id} Boss level : {user_data['currentBoss']['level']} | Boss health : {user_data['currentBoss']['currentHealth']} - {user_data['currentBoss']['maxHealth']}")
       for i in range(user_data.get("energyRechargeLevel"),3):
-          r= upgrade("EnergyRechargeRate")
+          r= upgrade(conn,"EnergyRechargeRate")
       for i in range(user_data.get("weaponLevel"),profile['dame_level']):
-          r= upgrade("Damage")
+          r= upgrade(conn,"Damage")
       for i in range(user_data.get("energyLimitLevel"),profile['energy_level']):
-          r= upgrade("EnergyCap")
+          r= upgrade(conn,"EnergyCap")
       
       if boss_health <= 0:
-          change_boss()
+          change_boss(conn)
         
 
-      def farm():
+      def farm(conn):
           for i in range(10):
               total_tap = random.randint(30, 50)
-              respon =  submit_taps(total_tap)
+              respon =  submit_taps(conn,total_tap)
               if respon is not None:
                   energy = respon['telegramGameProcessTapsBatch']['currentEnergy']
                   current_boss = respon['telegramGameProcessTapsBatch']['currentBoss']['currentHealth']
                   print_message(f"✅ #{profile_id} {i+1}/10 Tap {total_tap} thành công.Năng lượng còn lại:{energy}.Máu boss còn lại:{current_boss}")
                   if current_boss <= 0:
-                        r= change_boss()
+                        r= change_boss(conn)
                         if r==False:
                             return False
 
@@ -901,17 +925,17 @@ __typename
                   break
               time.sleep(2) 
 
-      r= farm()
+      r= farm(conn)
       if r==False:
           return print_message(f"❌ #{profile_id} Nâng boss gặp lỗi. Move next")
       for i  in range(boost_energy_amount):
-          apply_boost("Recharge")
-          farm()
+          apply_boost(conn,"Recharge")
+          farm(conn)
           time.sleep(3)
 
       for i  in range(boost_turbo_amount):
           boost_type = "Turbo"
-          apply_boost(boost_type)
+          apply_boost(conn,boost_type)
           turbo_time = time.time()
           total_hit = random.randint(400,600)
           nonce=generate_random_nonce()
@@ -927,7 +951,7 @@ __typename
                 },
                 "query": MUTATION_GAME_PROCESS_TAPS_BATCH
             }]
-              respon =  submit_taps(total_hit,json_payload=tap_payload)   
+              respon =  submit_taps(conn,total_hit,json_payload=tap_payload)   
               if respon is not None:
                   energy = respon['telegramGameProcessTapsBatch']['currentEnergy']
                   current_boss = respon['telegramGameProcessTapsBatch']['currentBoss']['currentHealth']
@@ -936,7 +960,7 @@ __typename
                   print_message(f"❌ #{profile_id} Tap thất bại")
                   break      
               if current_boss <= 0:
-                  change_boss()
+                  change_boss(conn)
               if ((time.time() - turbo_time) > 10):
                   turbo_time = 0
                   break
