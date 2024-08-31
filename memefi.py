@@ -1,4 +1,6 @@
+from concurrent.futures import ThreadPoolExecutor
 import sys
+import threading
 import traceback
 import asyncio
 import json
@@ -17,6 +19,26 @@ from helper import utils
 import http.client
 import brotli
 import base64
+import sys
+import traceback
+import json
+import os
+from colorama import Fore
+import httpx
+import pandas as pd
+import pytz
+import random
+import string
+import time
+from datetime import datetime, timedelta
+from urllib.parse import unquote
+from helper.utils import print_message, sleep, format_number
+from helper import utils
+import http.client
+import brotli
+import base64
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 
 headers_set =  {
   'Accept': '*/*',
@@ -500,7 +522,7 @@ def generate_random_nonce(length=52):
     return ''.join(random.choice(characters) for _ in range(length))
 
 
-async def exec(profile): 
+def exec(profile): 
     try:
       headers = headers_set.copy()
       proxies=utils.get_proxies(profile["proxy"],type=0)
@@ -554,10 +576,10 @@ async def exec(profile):
               str_data=(brotli.decompress(data))
               return json.loads(str_data)
 
-          
-        
 
-      def auth(cnn,query):
+      def auth(cnn,query:str):
+          if not "query_id=" in query:
+              return query
           tg_web_data = unquote(unquote(query))
           query_id = tg_web_data.split('query_id=', maxsplit=1)[1].split('&user', maxsplit=1)[0]
           user_data = tg_web_data.split('user=', maxsplit=1)[1].split('&auth_date', maxsplit=1)[0]
@@ -632,7 +654,10 @@ async def exec(profile):
             }]
           response=call_data(conn,json_payload)
           if response is not None:
-              return response[0]['data']  # Mengembalikan hasil response
+              if "error" in response:
+                  print_message(f"❌ #{profile_id} Lỗi khi tap. {response.get('error')}")
+              else:
+                  return response[0]['data']  # Mengembalikan hasil response
           else:
               print_message(f"❌ #{profile_id} Lỗi khi tap thất bại")
 
@@ -971,56 +996,59 @@ __typename
     finally:
         print_message(f"✅ #{profile_id} Kết thúc")
 
-async def limited_exec(semaphore, profile):
-    async with semaphore:
-        await exec(profile)
-        
-            
+def limited_exec(semaphore, profile):
+    with semaphore:
+        exec(profile)
 
-async def main(count_process,delay,sheet_name):
+def main(count_process, delay, sheet_name):
     print_message("Next round...")
-    code=utils.get_daily_code()
-    vector=None
-    if code is not None:
-        vector=code.get("comboMeme",None)
-    df=pd.read_excel("account.xlsx",dtype={"profile":str, "query":str,"dame_level":int,"energy_level":int,"token":str},sheet_name=sheet_name)
+    vector = "2,2,2,2"
+    df = pd.read_excel("account.xlsx", dtype={"profile": str, "query": str, "token": str}, sheet_name=sheet_name)
     if "proxy" not in df.columns:
-            df["proxy"] = ""
-    df['proxy']=df['proxy'].fillna('')
+        df["proxy"] = ""
+    df['proxy'] = df['proxy'].fillna('')
+    df['query'] = df['query'].fillna('')
+    df = df[(~df['query'].isna()) & (df['query'] != '')]
     if "energy_level" not in df.columns:
-        df["energy_level"]=10
+        df["energy_level"] = 10
     if "dame_level" not in df.columns:
-        df["dame_level"]=6
-    df=df[(~df['query'].isna()) & (df['query']!='')]
-
-    profiles=[]
-    for idx,row in df.iterrows():
-        profile={
-            "id":idx+1,
-            "profile":row["profile"],
-            "query":row["query"],
-            "proxy":row["proxy"],
-            "energy_level":row["energy_level"],
-            "dame_level":row["dame_level"],
-            "vector":vector
+        df["dame_level"] = 6
+    
+    df['dame_level'] = df['dame_level'].astype(int)
+    df['energy_level'] = df['energy_level'].astype(int)
+    profiles = []
+    for idx, row in df.iterrows():
+        profile = {
+            "id": idx + 1,
+            "profile": row["profile"],
+            "query": row["query"],
+            "proxy": row["proxy"],
+            "energy_level": row["energy_level"],
+            "dame_level": row["dame_level"],
+            "vector": vector
         }
         profiles.append(profile)
-        # await exec(profile)
-    semaphore = asyncio.Semaphore(count_process)  # Limit to 5 concurrent tasks
-    tasks = [limited_exec(semaphore, profile) for profile in profiles]
-    await asyncio.gather(*tasks)
-    for __second in range(delay*60, 0, -1):
-          sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
-          sys.stdout.flush()
-          time.sleep(1)
 
-if __name__=="__main__":
-    count_process=int(input("Nhập số CPU:"))
-    sheet_name=input("Nhập tên sheet:")
-    delay=int(input("Nhập thời gian nghỉ(phút):"))
+    semaphore = threading.Semaphore(count_process)  # Limit to count_process concurrent tasks
+    with ThreadPoolExecutor(max_workers=count_process) as executor:
+        futures = [executor.submit(limited_exec, semaphore, profile) for profile in profiles]
+        for future in as_completed(futures):
+            future.result()
+
+    for __second in range(delay * 60, 0, -1):
+        sys.stdout.write(f"\r{Fore.CYAN}Chờ thời gian nhận tiếp theo trong {Fore.CYAN}{Fore.WHITE}{__second // 60} phút {Fore.WHITE}{__second % 60} giây")
+        sys.stdout.flush()
+        time.sleep(1)
+
+if __name__ == "__main__":
+    sheet_name = input("Nhập tên sheet:")
+    if sheet_name == "":
+        sheet_name = "memefi"
+    count_process = int(input("Nhập số CPU:"))   
+    delay = int(input("Nhập thời gian nghỉ(phút):"))
     while True:
         try:
-          asyncio.run(main(count_process,delay,sheet_name))        
+            main(count_process, delay, sheet_name)        
         except Exception as e:
             print_message(traceback.format_exc())
 
